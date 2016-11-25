@@ -1,0 +1,32 @@
+/database/
+/evaluationGraphEvalResults/
+/timeRecord.txt
+
+neo4j/src/main/task/FindCompositions.java
+
+target/classes/*/*.class
+target/test-classes/ws/summer/*.class
+.classpath
+.class
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+
+# Eclipse Core
+.project
+
+
+# Locally stored "Eclipse launch configurations"
+*.launch
+
+# JDT-specific (Eclipse Java Development Tools)
+.classpath
+
