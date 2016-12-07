@@ -72,7 +72,7 @@ public class Main implements Runnable{
 	private final static int individuleNodeSize = 12;
 	private final static int candidateSize = 50;
 	private final boolean runQosDataset = true;
-	private final boolean runMultipileTime = true;
+	private final boolean runMultipileTime = false;
 	private final int timesToRun = 30;
 
 	private final static double m_a = 0.15;
@@ -114,7 +114,7 @@ public class Main implements Runnable{
 
 		//populateTaxonomytree
 		startTime = System.currentTimeMillis();
-		populateTaxonomytree();		
+		populateTaxonomytree(); // Algorithm 1		
 		endTime = System.currentTimeMillis();
 		neo4jwsc.records.put("Populate Taxonomy Tree", endTime - startTime);
 		System.out.println("Populate Taxonomy Tree total execution time: " + (endTime - startTime) );
@@ -180,13 +180,13 @@ public class Main implements Runnable{
 
 		//reduce database use copied database
 		startTime = System.currentTimeMillis();
-		reduceDB();
+		reduceDB(); // Algorithm 4: Reduce Graph Database
 		endTime = System.currentTimeMillis();
 		neo4jwsc.records.put("reduce graph db ", endTime - startTime);
 		System.out.println("reduce graph db Total execution time: " + (endTime - startTime) );
 
 
-
+		// FIND COMPOSITIONS - Algorithm 5?
 		if(!neo4jwsc.runMultipileTime){
 			//find compositions
 			startTime = System.currentTimeMillis();
@@ -209,17 +209,23 @@ public class Main implements Runnable{
 			System.out.println();
 			System.out.println();
 
-
-
+			// resultWithQos.size() is 50 becuase candidateSize is 50 (maybe this is initial population size?)
+			// do I begin performing GP from this point once I have my candidates?
+	
+			// create a new DB containing the resulting composition
+			//::TODO I probably don't want to find the best result - rather just keep population
+			// the findCompositions() method on line 193 automatically returns the best (QoS) composition
 			startTime = System.currentTimeMillis();
+			int newDBCounter = 0; //::TODO remoev this later and from line 228, it was just to create a lot of small databases with different compositions
 			for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry : resultWithQos.entrySet()){
+				newDBCounter++;
 				try {
 					FileUtils.deleteRecursively(new File(newResultDBPath));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 				//				generateDB(entry.getKey(),newResultDBPath,"result db", null);		
-				GenerateDatabase generateDatabase2 = new GenerateDatabase(entry.getKey(), subGraphDatabaseService, newResultDBPath);
+				GenerateDatabase generateDatabase2 = new GenerateDatabase(entry.getKey(), subGraphDatabaseService, newResultDBPath+newDBCounter);
 				generateDatabase2.createDbService();
 				GraphDatabaseService newGraphDatabaseService = generateDatabase2.getGraphDatabaseService();
 				registerShutdownHook(graphDatabaseService,"original test");
@@ -241,9 +247,13 @@ public class Main implements Runnable{
 
 
 		}
-		else {
+		// run 30 times and find best composition from each iteration
+		// I probably want to set runMultipileTime to false so that the if statement above is executed.
+		// This way the "initial population" is generated and from there I can begin using GP to evolve
+		// the solutions 
+		else { 
 			int count  = 0;
-			while(count <neo4jwsc.timesToRun){
+			while(count <neo4jwsc.timesToRun) {
 				//find compositions
 				startTime = System.currentTimeMillis();
 				FindCompositions findCompositions = new FindCompositions(candidateSize, individuleNodeSize, subGraphDatabaseService);
@@ -316,6 +326,7 @@ public class Main implements Runnable{
 				System.out.println();
 				count++;
 			}
+			
 			if(neo4jwsc.runTestFiles){
 				FileWriter fw = new FileWriter("test-dataset-bestResults.stat");
 				for(Entry<Integer,Map<String, String>> entry : neo4jwsc.bestResults.entrySet()){
@@ -430,7 +441,6 @@ public class Main implements Runnable{
 		try {
 			candidates = findCompositions.run();
 		} catch (OuchException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 
@@ -465,7 +475,8 @@ public class Main implements Runnable{
 		} finally {
 			transaction.close();
 		}	
-		return findCompositions.getResult(candidates);
+		// return findCompositions.getResult(candidates); //::TODO this returns the best candidate but maybe I just want all the candidates to perform GP on
+		return candidates;
 	}
 
 

@@ -64,12 +64,20 @@ public class FindCompositions {
 		this.candidateSize = candidateSize;
 		population = new HashSet<Node>();
 	}
+	
+	
 	public Map<List<Node>, Map<String,Map<String, Double>>> run() throws OuchException{
 		Map<List<Node>, Double> timeForEachCandidate = new HashMap<List<Node>, Double>();
 		findCandidates(timeForEachCandidate);		
 		Map<List<Node>, Map<String,Map<String, Double>>> candidatesWithQos = calculateQos(timeForEachCandidate);
 		return candidatesWithQos;
 	}
+	
+	/**
+	 * Returns the best composition (composition with best fitness)
+	 * @param candidates
+	 * @return
+	 */
 	public Map<List<Node>, Map<String,Map<String, Double>>> getResult(Map<List<Node>, Map<String,Map<String, Double>>> candidates) {
 		double best = 0;
 		Map<List<Node>, Map<String,Map<String, Double>>>bestResultWithQos = new HashMap<List<Node>, Map<String,Map<String, Double>>>();
@@ -116,6 +124,7 @@ public class FindCompositions {
 		//		}
 		return bestResultWithQos;
 	}
+	
 	private Map<List<Node>, Map<String,Map<String, Double>>> calculateQos(Map<List<Node>, Double> timeForEachCandidate) {
 		Map<List<Node>, Map<String,Map<String, Double>>> candidatesWithQos = new HashMap<List<Node>, Map<String,Map<String, Double>>>();
 		List<Double> T = new ArrayList<Double>();
