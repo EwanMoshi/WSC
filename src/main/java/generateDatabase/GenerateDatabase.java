@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -21,6 +22,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 
+import TreeRepresentation.TreeNode;
 import component.ServiceNode;
 import component.TaxonomyNode;
 
@@ -33,7 +35,7 @@ public class GenerateDatabase {
 	private Node[] neo4jServiceNodes;
 	private IndexManager index = null;
 	public Index<Node> services = null;
-	private static Map<String, Node> neo4jServNodes = new HashMap<String, Node>();;
+	private static Map<String, Node> neo4jServNodes = new HashMap<String, Node>();
 	@SuppressWarnings("unused")
 	private long startTime = 0;
 	@SuppressWarnings("unused")
@@ -51,10 +53,11 @@ public class GenerateDatabase {
 	private static final int AVAILABILITY = 2;
 	private static final int RELIABILITY = 3;
 
-	public GenerateDatabase(List<Node> graphNodes, GraphDatabaseService oldGraphDatabaseService, String databasePath){
+	public GenerateDatabase(List<Node> graphNodes, GraphDatabaseService oldGraphDatabaseService, String databasePath) {
 		this.databasePath = databasePath;
 		this.graphNodes = graphNodes;
-		this.oldGraphDatabaseService = oldGraphDatabaseService;	}
+		this.oldGraphDatabaseService = oldGraphDatabaseService;	
+	}
 
 	public void setTaxonomyMap(Map<String, TaxonomyNode> taxonomyMap) {
 		this.taxonomyMap = taxonomyMap;
@@ -222,15 +225,15 @@ public class GenerateDatabase {
 
 		return tempToArray;
 	}
-	public void createServicesDatabase(){
-		if(graphNodes==null){
-
+	public void createServicesDatabase() {	
+		if (graphNodes==null) {
 			Transaction transaction = newGraphDatabaseService.beginTx();
 			neo4jServiceNodes = new Node[0];
 			try{
 				index = newGraphDatabaseService.index();
 				services = index.forNodes( "identifiers" );
 				int i = 0;
+				
 				for(Entry<String, ServiceNode> entry : serviceMap.entrySet()) {
 					i++;
 					String key = entry.getKey();
@@ -265,15 +268,40 @@ public class GenerateDatabase {
 			}		
 		}
 		//create nodes from neo4j nodes
-		else{
+		else {
+	
 			List<Node>nNodes = new ArrayList<Node>();
 			neo4jServiceNodes = new Node[0];
 			Transaction transaction = oldGraphDatabaseService.beginTx();
+	
+			//List<TreeNode> tree = new ArrayList<TreeNode>();
+					
+			//Node startingNode = oldGraphDatabaseService.findNodesByLabelAndProperty(label, "name", value)
+			
+			//transformGraphToTree(graphNodes.get(0), Arrays.asList(getInputOutputServicesForSubGraph(graphNodes.get(0), graphNodes, "inputServices",oldGraphDatabaseService)));
 			for(Node sNode: graphNodes) {
-
+				// pass the current node, the rest of nodes in the comp, whether we want to retrieve input or 
+				// output for current node, and the db service
 				String[] inputServices = getInputOutputServicesForSubGraph(sNode, graphNodes, "inputServices",oldGraphDatabaseService);				
 				String[] outputServices = getInputOutputServicesForSubGraph(sNode, graphNodes,"outputServices",oldGraphDatabaseService);
 				String[] priousNodeNames = getInputOutputServicesForSubGraph(sNode, graphNodes,"priousNodeNames",oldGraphDatabaseService);
+				// what's prious?
+				
+/*				List<String> inputServicesList = new ArrayList<String>(Arrays.asList(inputServices));
+				List<String> outputServicesList = new ArrayList<String>(Arrays.asList(outputServices));
+			
+				// if name = end node
+				if (sNode.getProperty("name").equals("start")) {
+					if (outputServicesList.size() == 1) { // if more than one successor
+						TreeNode root = new TreeNode(null, sNode.getProperty("outputServices"), inputServicesList);
+						root.addChild(new TreeNode(root, null, null));
+					}
+					else {
+						
+					}
+				}*/
+				
+				
 				if(inputServices==null){
 					inputServices = new String[0];
 				}
@@ -283,12 +311,13 @@ public class GenerateDatabase {
 				if(priousNodeNames==null){
 					priousNodeNames = new String[0];
 				}
-				//
+			
+				
 				Transaction tx = newGraphDatabaseService.beginTx();
 				Node service = newGraphDatabaseService.createNode();
 				index = newGraphDatabaseService.index();
 				services = index.forNodes( "identifiers" );
-				try{
+				try {
 					double[] qos = new double[4];
 					if(sNode.getProperty("name").equals("start")||sNode.getProperty("name").equals("end")){
 						qos = new double[4];
@@ -319,18 +348,99 @@ public class GenerateDatabase {
 					neo4jServiceNodes = increaseNodeArray(neo4jServiceNodes);
 					neo4jServiceNodes[neo4jServiceNodes.length-1] =service;
 					neo4jServNodes.put((String) sNode.getProperty("name"), service);
-					nNodes.add(service);
+					nNodes.add(service);					
 					tx.success();
 				}catch(Exception e){
 					System.out.println("createNewGraphDatabase:  graphDatabaseService    "+ e);
 				}finally{
 					tx.close();
 				}
-
-			}	
+			}
 			transaction.close();
 		}
 	}
+	
+	private List<TreeNode> transformGraphToTree(Node currentNode, List<String> asList) {
+		
+		TreeNode node;
+		
+		if (getInputOutputServicesForSubGraph(currentNode, graphNodes, "outputServices",oldGraphDatabaseService) == null) {
+
+		}
+		else if (currentNode.getProperty("name").equals("start")) {
+			// if from has one successor
+			if (getInputOutputServicesForSubGraph(currentNode, graphNodes, "outputServices",oldGraphDatabaseService).length == 1) {
+				//node = transformGraphToTree(currentNode.getProperty("outputServices"))
+			}
+		}
+			
+		return null;
+	}
+
+	private void transformGraphToTree(List<Node> nodes) {
+		List<TreeNode> tree = new ArrayList<TreeNode>();
+		System.out.println("Size of Graph Nodes =====================   "+ nodes.size());
+		
+	
+		Transaction transaction = oldGraphDatabaseService.beginTx();
+
+        try {
+			for(Node currentNode: graphNodes) {
+				// pass the current node, the rest of nodes in the comp, whether we want to retrieve input or 
+				// output for current node, and the db service
+				String[] nodeInputs = getNodePropertyArray(currentNode, "inputs", oldGraphDatabaseService);
+				String[] nodeOutupts = getNodePropertyArray(currentNode, "outputs", oldGraphDatabaseService);
+							
+				List<String> inputs = new ArrayList<String>(Arrays.asList(nodeInputs));
+				List<String> outputs = new ArrayList<String>(Arrays.asList(nodeOutupts));
+				
+				String[] inputServices = getInputOutputServicesForSubGraph(currentNode, graphNodes, "inputServices",oldGraphDatabaseService);				
+				String[] outputServices = getInputOutputServicesForSubGraph(currentNode, graphNodes,"outputServices",oldGraphDatabaseService);
+
+				List<String> inputs2 = new ArrayList<String>(Arrays.asList(inputServices));
+				List<String> outputs2 = new ArrayList<String>(Arrays.asList(outputServices));
+
+				System.out.println(outputs.size());
+				System.out.println(outputs2.size());
+
+
+				System.out.println(currentNode+ "---------------------------");
+
+				for (String s : outputs) {
+					System.out.println(s);
+				}
+				//System.out.println("service outputs "+ "---------------------------");
+
+				for (String s : outputs2) {
+					//System.out.println(s);
+				}
+				
+				
+				// if name = end node
+	/*			if (currentNode.getProperty("name").equals("start")) {
+					TreeNode currentTreeNode = new TreeNode(null, null, inputs);
+					if (outputs.size() > 1) { // if more than one successor
+						//tree.add(TreeNode)
+					}
+				}*/
+
+				
+			}
+        	transaction.success();
+			
+        } catch (Exception e) {
+        } finally {
+        	transaction.close();
+        }
+		
+
+		
+		//if currentNode = end {
+		//quit
+		//}
+		//t <- from means tree.add(currentNode)
+	}
+
 	private Node[] increaseNodeArray(Node[] theArray)
 	{
 		int i = theArray.length;
@@ -355,7 +465,7 @@ public class GenerateDatabase {
 	public Index<Node> getServices() {
 		return services;
 	}
-	private String[] getNodePropertyArray(Node sNode, String property){
+	public String[] getNodePropertyArray(Node sNode, String property){
 		Object obj =sNode.getProperty(property);
 		//    		//remove the "[" and "]" from string
 		String ips = Arrays.toString((String[]) obj).substring(1, Arrays.toString((String[]) obj).length()-1);
@@ -369,6 +479,7 @@ public class GenerateDatabase {
 		}
 		return array;
 	}
+	
 	private String[] getNodePropertyArray(Node sNode, String property,GraphDatabaseService oldGraphDatabaseService){
 		Transaction transaction = oldGraphDatabaseService.beginTx();
 		Object obj =sNode.getProperty(property);
@@ -385,6 +496,7 @@ public class GenerateDatabase {
 		transaction.close();
 		return array;
 	}
+	
 	public String[] increaseArray(String[] theArray)
 	{
 		int i = theArray.length;
@@ -418,49 +530,51 @@ public class GenerateDatabase {
 		}
 		return tNodeParents;
 	}
+	
 	private static enum RelTypes implements RelationshipType{
 		PARENT, CHILD, OUTPUT, INPUT, TO, IN, OUT
 	}
-	private String[] getInputOutputServicesForSubGraph(Node sNode, List<Node> releatedNodes, String inputOrOutput, GraphDatabaseService graphDatabaseService) {
+	
+	public String[] getInputOutputServicesForSubGraph(Node sNode, List<Node> releatedNodes, String inputOrOutput, GraphDatabaseService graphDatabaseService) {
 		Transaction tx = graphDatabaseService.beginTx();
 		String [] toReturn = null;
 		try{
 			List<String>releatedNodesNames = new ArrayList<String>();
-			for(Node n: releatedNodes){
+			for (Node n: releatedNodes) {
 				releatedNodesNames.add((String)n.getProperty("name"));
 			}
 
-			if(inputOrOutput.equals("inputServices")){
+			if (inputOrOutput.equals("inputServices")) {
 				List<String>inputServicesList = Arrays.asList(getNodePropertyArray(sNode,"inputServices",graphDatabaseService));
-				if(inputServicesList.size()>0){
+				if (inputServicesList.size()>0) {
 					List<String>tempInputServices = new ArrayList<String>(inputServicesList);
 					tempInputServices.retainAll(releatedNodesNames);
 					String[] inputServices = new String[tempInputServices.size()];
-					for(int i = 0; i<tempInputServices.size(); i++){
+					for (int i = 0; i<tempInputServices.size(); i++) {
 						inputServices[i] = tempInputServices.get(i);
 					}
 					toReturn = inputServices;
 				}
 			}
-			else if(inputOrOutput.equals("outputServices")){
+			else if (inputOrOutput.equals("outputServices")) {
 				List<String>outputServicesList = Arrays.asList(getNodePropertyArray(sNode,"outputServices",graphDatabaseService));
-				if(outputServicesList.size()>0){
+				if (outputServicesList.size()>0) {
 					List<String>tempOutputServices = new ArrayList<String>(outputServicesList);
 					tempOutputServices.retainAll(releatedNodesNames);
 					String[] outputServices = new String[tempOutputServices.size()];
-					for(int i = 0; i<tempOutputServices.size(); i++){
+					for (int i = 0; i<tempOutputServices.size(); i++) {
 						outputServices[i] = tempOutputServices.get(i);
 					}
 					toReturn = outputServices;
 				}
 			}
-			else if(inputOrOutput.equals("priousNodeNames")){
+			else if (inputOrOutput.equals("priousNodeNames")) {
 				List<String>priousNodeNames = Arrays.asList(getNodePropertyArray(sNode,"priousNodeNames",graphDatabaseService));
-				if(priousNodeNames.size()>0){
+				if (priousNodeNames.size()>0) {
 					List<String>tempPriousNodeNames = new ArrayList<String>(priousNodeNames);
 					tempPriousNodeNames.retainAll(releatedNodesNames);
 					String[] priousNodes = new String[tempPriousNodeNames.size()];
-					for(int i = 0; i<tempPriousNodeNames.size(); i++){
+					for (int i = 0; i<tempPriousNodeNames.size(); i++) {
 						priousNodes[i] = tempPriousNodeNames.get(i);
 					}
 					toReturn = priousNodes;
@@ -477,5 +591,9 @@ public class GenerateDatabase {
 
 	public void set(List<Map<String, String>> bestRels) {
 		this.bestRels  = bestRels;
+	}
+
+	public GraphDatabaseService getOldGraphDatabaseService() {
+		return oldGraphDatabaseService;
 	}
 }

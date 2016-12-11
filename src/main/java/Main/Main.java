@@ -11,7 +11,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -23,6 +26,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.io.fs.FileUtils;
 
+import TreeRepresentation.TreeNode;
 import component.ServiceNode;
 import component.TaxonomyNode;
 import generateDatabase.GenerateDatabase;
@@ -217,13 +221,21 @@ public class Main implements Runnable{
 			// the findCompositions() method on line 193 automatically returns the best (QoS) composition
 			startTime = System.currentTimeMillis();
 			int newDBCounter = 0; //::TODO remoev this later and from line 228, it was just to create a lot of small databases with different compositions
-			for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry : resultWithQos.entrySet()){
+			
+			// helper method to see how the result is computed ::TODO remove
+/*			try {
+				printCandidates(resultWithQos);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}*/
+			
+			for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry : resultWithQos.entrySet()) {
 				newDBCounter++;
-				try {
+/*				try { ::TODO maybe enable this later?
 					FileUtils.deleteRecursively(new File(newResultDBPath));
 				} catch (IOException e) {
 					e.printStackTrace();
-				}
+				}*/
 				//				generateDB(entry.getKey(),newResultDBPath,"result db", null);		
 				GenerateDatabase generateDatabase2 = new GenerateDatabase(entry.getKey(), subGraphDatabaseService, newResultDBPath+newDBCounter);
 				generateDatabase2.createDbService();
@@ -235,8 +247,13 @@ public class Main implements Runnable{
 				//				System.out.println("findCompositions.getBestRels()"+bestRels);
 				//				generateDatabase2.set(bestRels);
 				generateDatabase2.addServiceNodeRelationShip();
-				removeRedundantRel(newGraphDatabaseService);
-
+				removeRedundantRel(newGraphDatabaseService, generateDatabase2);	
+				
+				
+				// find out how to access this new non-redundant database
+				test(generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
+				
+				
 				registerShutdownHook(subGraphDatabaseService,"Reduced");
 				registerShutdownHook(newGraphDatabaseService, "Result");
 			}
@@ -382,6 +399,136 @@ public class Main implements Runnable{
 	}
 
 
+	private static void test(GenerateDatabase generateDatabase, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes, String dbPath) {
+		//GraphDatabaseService gs = new GraphDatabaseFactory().newEmbeddedDatabase(new File(dbPath));
+		Map<Node, TreeNode> nodeToTreeNodeMap = new HashMap<Node, TreeNode>();
+
+		List<TreeNode> toVisit = new ArrayList<TreeNode>();
+		List<TreeNode> tree = new ArrayList<TreeNode>();
+		
+		List<String> visited = new ArrayList<String>();
+
+		Transaction transaction = newGraphDatabaseService.beginTx();
+
+		try {
+			Iterable<Node> nodes = newGraphDatabaseService.getAllNodes();
+			//build a map of nodes to corresponding tree nodes
+			for(Node node: nodes) {
+				nodeToTreeNodeMap.put(node, new TreeNode(node.getProperty("name").toString(), null));
+			}
+
+			//find the start node and add the corresponding treenode to the toVisit list
+			for(Node node: nodes) {
+				if (node.getProperty("name").equals("start")) {
+					toVisit.add(nodeToTreeNodeMap.get(node)); // add the start node to the toVisit list
+					break; // break when we find the start node
+				}
+			}
+			
+			while (!(toVisit.isEmpty())) {
+				// while we still have nodes to visit
+				TreeNode currentNode = toVisit.get(0);
+				toVisit.remove(0);
+				if (visited.contains(currentNode.getName())) {
+					continue;
+				}
+				//String[] outputServices = generateDatabase.getInputOutputServicesForSubGraph(currentNode, graphNodes, "outputServices", newGraphDatabaseService);
+				//Optional<Node> correspondingNode = findCorrespondingNode(currentNode, nodeToTreeNodeMap); 
+				Node correspondingNode = findCorrespondingNode(currentNode, nodeToTreeNodeMap); 
+				
+				Iterable<Relationship> relationships = correspondingNode.getRelationships(Direction.OUTGOING);
+
+				// for each child, create a tree node and add it 
+				for (Relationship r : relationships) {
+					TreeNode n = new TreeNode(r.getProperty("To").toString(), currentNode);
+					currentNode.addChild(n); // add the child to the current node's children
+					toVisit.add(n); // add the child to the toVisit list
+				}
+				
+				//if (correspondingNode.isPresent()) {
+					//Object obj = correspondingNode.get().getProperty("outputServices");
+					Object obj = correspondingNode.getProperty("outputServices");
+
+					String[] outputsArray = getOutputArray(obj); // retrieve current node's outputs
+					//System.out.println("CurrentNode:      "+currentNode.getName());
+
+/*					// for each child, create a tree node and add it ::TODO remove this, I have better way of finding children using 
+ *					// r.getProperty()
+					for (int i = 0; i < outputsArray.length; i++) {
+						TreeNode n = new TreeNode(outputsArray[i], currentNode);
+						currentNode.addChild(n); // add the child to the current node's children
+						toVisit.add(n); // add the child to the toVisit list
+						//System.out.println("CHILD:      "+outputsArray[i]);
+
+					}*/
+				//}
+				tree.add(currentNode);
+				visited.add(currentNode.getName());
+				currentNode.setVisited(true);
+
+				
+				//System.out.println("+++++++++++++++   "+currentNode.getProperty("outputServices").toString());
+			}
+			
+		transaction.success();
+		printTree(tree);
+		} catch (Exception e) {
+			transaction.failure();
+		} finally {
+			transaction.close();
+		}			
+	}
+
+	private static void printTree(List<TreeNode> tree) {
+		for (TreeNode n : tree) {
+			System.out.println("================="+n.getName()+"============");
+			List<TreeNode> children = n.getChildren();
+			for (TreeNode child : children) {
+				System.out.println("Child Node: "+child.getName());
+			}
+		}
+		System.out.println("+++++++++++++++++++++++++++++++++++++++DONE+++++++++++++++++++++++++++++++");
+
+	}
+
+
+	/**
+	 * Returns the corresponding node for the current TreeNode
+	 * @param n
+	 * @param nodeToTreeNodeMap
+	 * @return
+	 */
+	//private static Optional<Node> findCorrespondingNode(TreeNode n, Map<Node, TreeNode> nodeToTreeNodeMap) {
+		
+		private static Node findCorrespondingNode(TreeNode n, Map<Node, TreeNode> map) {	
+		    for (Entry<Node, TreeNode> e : map.entrySet()) {
+		        if (e.getValue().getName().equals(n.getName())) {
+		            return e.getKey();
+		        }
+		    }
+		    return null;
+		}
+/*		return nodeToTreeNodeMap.entrySet()
+				.stream()
+				.filter(entry -> entry.getValue().getName().equals(n))
+				//.filter(entry -> Objects.equals(entry.getValue(), n))
+				.map(Map.Entry::getKey).findFirst();
+	}*/
+	
+	private static String[] getOutputArray(Object obj) {
+			String ips = Arrays.toString((String[]) obj).substring(1, Arrays.toString((String[]) obj).length()-1);
+			String[] tempInputs = ips.split("\\s*,\\s*");
+			String[] array = new String[0];
+			for (String s: tempInputs) {
+				if (s.length() > 0) {
+					array = increaseArray(array);
+					array[array.length-1] = s;
+				}
+			}	
+			return array;
+	}
+
+
 	private static void printResult(Map<List<Node>, Map<String, Map<String, Double>>> resultWithQos) {
 		System.out.println("Best result: ");
 		Transaction tx = subGraphDatabaseService.beginTx();
@@ -454,6 +601,7 @@ public class Main implements Runnable{
 				System.out.println();
 				System.out.print("candidate "+ ++i+": ");
 
+				// remove these helpers later?
 				for(Node n: entry.getKey()){
 					System.out.print(n.getProperty("name")+"  ");
 				}
@@ -605,7 +753,7 @@ public class Main implements Runnable{
 	}
 
 
-	private static void removeRedundantRel(GraphDatabaseService graphDatabaseService) {
+	private static void removeRedundantRel(GraphDatabaseService graphDatabaseService, GenerateDatabase generateDatabase2) {
 		List<Relationship>toRemove = new ArrayList<Relationship>();
 		Transaction transaction = graphDatabaseService.beginTx();
 		try{
@@ -625,7 +773,10 @@ public class Main implements Runnable{
 							//							t.success();
 							//							t.close();
 							toRemove.add(r);
-
+/*							String[] outputs = generateDatabase2.getNodePropertyArray(node, "outputServices");
+							for (int i = 0; i < outputs.length; i ++) {
+								System.out.println("+++++++++++++++++++++++++++++           "+outputs[i]);
+							}*/
 						}else{
 							Transaction ttt = graphDatabaseService.beginTx();
 							r.setProperty("removeable", false);
@@ -645,6 +796,8 @@ public class Main implements Runnable{
 		for(Relationship r: toRemove){
 			Transaction t = graphDatabaseService.beginTx();
 			System.out.println("remove: "+r.getId());
+			//System.out.println("remove: "+r.);
+
 			r.delete();
 			t.success();
 			t.close();
@@ -835,4 +988,32 @@ public class Main implements Runnable{
 
 		return newArray;
 	}
+	
+	// list of nodes in comp -> (normalize/non-normal -> (A/R/C/T -> Value))
+	private static void printCandidates(Map<List<Node>, Map<String, Map<String, Double>>> resultWithQos) throws InterruptedException {
+		int count = 0;
+		for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry : resultWithQos.entrySet()) {
+			//System.out.println(entry.getKey());
+			for (Map.Entry<String, Map<String, Double>> entry2 : entry.getValue().entrySet()) {
+				//System.out.println(entry2.getKey());
+				for (Map.Entry<String, Double> entry3 : entry2.getValue().entrySet()) {
+					System.out.println(entry3.getKey()+"  >>>>>>>>>>>>>>>>>>>   "+ entry3.getValue());
+					
+				}
+
+
+			}
+
+			
+			
+			count++;
+		}
+			
+		System.out.println(count);
+
+		TimeUnit.MINUTES.sleep(50);
+
+	}
+	
+	
 }
