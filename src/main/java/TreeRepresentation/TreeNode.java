@@ -1,7 +1,9 @@
 package TreeRepresentation;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class TreeNode {
 	
@@ -10,6 +12,9 @@ public class TreeNode {
 	private List<TreeNode> children = new ArrayList<TreeNode>();
 	private List<String> inputs = new ArrayList<String>();
 	private boolean visited = false;
+	
+	private Set<String> inputSet = new HashSet<String>();
+	private Set<String> outputSet = new HashSet<String>();
 	
 	// 	public TreeNode(String name, TreeNode parent, List<TreeNode> children, List<String> inputs) old consutrctor
 
@@ -31,6 +36,10 @@ public class TreeNode {
 	}
 	
 	
+	public void setParent(TreeNode n) {
+		parent = n;
+	}
+	
 	public TreeNode getParent() {
 		return parent;
 	}
@@ -44,8 +53,13 @@ public class TreeNode {
 	}
 
 
+	public void setName(String s) {
+		name = s;
+	}
+	
 	public String getName() {
 		return name;
 	}
 
+	
 }

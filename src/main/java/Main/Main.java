@@ -399,94 +399,205 @@ public class Main implements Runnable{
 	}
 
 
-	private static void test(GenerateDatabase generateDatabase, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes, String dbPath) {
-		//GraphDatabaseService gs = new GraphDatabaseFactory().newEmbeddedDatabase(new File(dbPath));
-		Map<Node, TreeNode> nodeToTreeNodeMap = new HashMap<Node, TreeNode>();
+    private static void test(GenerateDatabase generateDatabase, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes, String dbPath) {
+        //GraphDatabaseService gs = new GraphDatabaseFactory().newEmbeddedDatabase(new File(dbPath));
+        Map<Node, TreeNode> nodeToTreeNodeMap = new HashMap<Node, TreeNode>();
 
-		List<TreeNode> toVisit = new ArrayList<TreeNode>();
-		List<TreeNode> tree = new ArrayList<TreeNode>();
+        List<TreeNode> toVisit = new ArrayList<TreeNode>();
+        List<TreeNode> tree = new ArrayList<TreeNode>();
+
+        List<String> visited = new ArrayList<String>();
+
+        Transaction transaction = newGraphDatabaseService.beginTx();
+
+        try {
+            Iterable<Node> nodes = newGraphDatabaseService.getAllNodes();
+            //build a map of nodes to corresponding tree nodes
+            for(Node node: nodes) {
+                nodeToTreeNodeMap.put(node, new TreeNode(node.getProperty("name").toString(), null));
+            }
+
+            //find the start node and add the corresponding treenode to the toVisit list
+            for(Node node: nodes) {
+                if (node.getProperty("name").equals("start")) {
+                    toVisit.add(nodeToTreeNodeMap.get(node)); // add the start node to the toVisit list
+                    break; // break when we find the start node
+                }
+            }
+
+            while (!(toVisit.isEmpty())) {
+                // while we still have nodes to visit
+                TreeNode currentNode = toVisit.get(0);
+                toVisit.remove(0);
+                if (visited.contains(currentNode.getName())) {
+                    continue;
+                }
+                //String[] outputServices = generateDatabase.getInputOutputServicesForSubGraph(currentNode, graphNodes, "outputServices", newGraphDatabaseService);
+                //Optional<Node> correspondingNode = findCorrespondingNode(currentNode, nodeToTreeNodeMap);
+                Node correspondingNode = findCorrespondingNode(currentNode, nodeToTreeNodeMap);
+
+                Iterable<Relationship> relationships = correspondingNode.getRelationships(Direction.OUTGOING);
+
+                int numOfChildren = 0;
+                for (Relationship r : relationships) {
+                    numOfChildren++;
+                }
+
+/*                if (currentNode.getName().equals("start")) { ::TODO perhaps put this outside
+                    if (numOfChildren == 1) { // create a sequence node
+                        currentNode.setType("Sequence");
+                    }
+                    else { // create a parallel node
+                        currentNode.setType("Parallel");
+                    }
+                }*/
+
+                // check if the end node is in the current node's children and remove if true
+                for (Relationship r : relationships) {
+                    if (r.getProperty("To").toString().equals("end")) {
+                        numOfChildren--;
+                        break;
+                    }
+                }
+
+            	TreeNode parallel = new TreeNode("", null);
+
+                // for each child, create a tree node and add it
+                for (Relationship r : relationships) {
+                    if (currentNode.getName().equals("start")) {
+                        if (numOfChildren == 1) { // create a sequence node
+                            TreeNode n = new TreeNode(r.getProperty("To").toString(), currentNode);
+                            currentNode.addChild(new TreeNode(currentNode.getName(), currentNode));    // current becomes sequence
+                            currentNode.setName("Sequence");
+                            // currentNode.addChild(currentNode); maybe you don't want to add the start node to it's children
+                            currentNode.addChild(n); // add the child to the current node's children
+                            toVisit.add(n); // add the child to the toVisit list
+                        }
+                        else { // create a parallel node
+                            TreeNode n = new TreeNode(r.getProperty("To").toString(), currentNode);
+                            currentNode.addChild(n); // add the child to the current node's children
+                            toVisit.add(n); // add the child to the toVisit list
+                        }
+                    }
+                    else {
+                        if (numOfChildren == 1) {
+                        	//currentNode.addChild(new TreeNode(currentNode.getName().toString(), currentNode.getParent()));
+                        	currentNode.addChild(new TreeNode(currentNode.getName().toString(), currentNode));
+                        	currentNode.setName("Sequence");
+                        	TreeNode n2 = new TreeNode(r.getProperty("To").toString(), currentNode);
+                        	currentNode.addChild(n2);
+                        	toVisit.add(n2);
+                       	
+                        	
+/*                        	TreeNode n = new TreeNode("Sequence", currentNode.getParent());
+                        	TreeNode n2 = new TreeNode(r.getProperty("To").toString(), n);
+                        	n.addChild(n2);
+                        	currentNode.getParent().addChild(n);
+                        	toVisit.add(n2);
+                        	tree.add(n);*/
+                        	
+                        	
+                        	/*TreeNode n = new TreeNode(r.getProperty("To").toString(), currentNode);
+                            currentNode.addChild(new TreeNode(currentNode.getName(), currentNode));
+                            currentNode.setName("Sequence");
+                            currentNode.addChild(n);
+                            toVisit.add(n);*/
+                        }
+                        else if (numOfChildren > 1) {
+                            currentNode.addChild(new TreeNode(currentNode.getName(), currentNode));    
+                            currentNode.setName("Sequence"); // current becomes sequence with current as one of its children
+                            parallel.setName("Parallel");
+                            parallel.setParent(currentNode);
+
+                            for (Relationship r2 : relationships) {
+                            	TreeNode n = new TreeNode(r2.getProperty("To").toString(), parallel);
+                            	parallel.addChild(n);
+                            	toVisit.add(n);
+                            }      
+                            currentNode.addChild(parallel);
+                            break;
+                        }
+/*                        else { // this is a leaf node
+                            TreeNode n = new TreeNode(r.getProperty("To").toString(), currentNode).getParent();
+                        }*/
+                    }
+                }
+
+                //if (correspondingNode.isPresent()) {
+                    //Object obj = correspondingNode.get().getProperty("outputServices");
+                    //Object obj = correspondingNode.getProperty("outputServices");
+
+                    //String[] outputsArray = getOutputArray(obj); // retrieve current node's outputs
+                    //System.out.println("CurrentNode:      "+currentNode.getName());
+
+/*                    // for each child, create a tree node and add it ::TODO remove this, I have better way of finding children using
+ *                    // r.getProperty()
+                    for (int i = 0; i < outputsArray.length; i++) {
+                        TreeNode n = new TreeNode(outputsArray[i], currentNode);
+                        currentNode.addChild(n); // add the child to the current node's children
+                        toVisit.add(n); // add the child to the toVisit list
+                        //System.out.println("CHILD:      "+outputsArray[i]);
+
+                    }*/
+                //}
+                
+             
+                Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("inputs")));
+				//inputs = getNodePropertyArray(correspondingNode, "inputServices");
+				System.out.println("========  "+currentNode.getName()+"    =======");
+
+				for (String s : inputSet) {
+					System.out.println("-----------------------------------------         " +s);
+				}
+                
+                if (currentNode.getName().equals("start") && numOfChildren > 1) {
+                	currentNode.setName("Parallel"); 
+                }
+                tree.add(currentNode);
+                if (!(parallel.getName().equals(""))) {
+                    tree.add(parallel);
+                }
+                visited.add(currentNode.getName());
+                currentNode.setVisited(true);
+
+
+                //System.out.println("+++++++++++++++   "+currentNode.getProperty("outputServices").toString());
+            }
+
+        transaction.success();
+        //printTree(tree.get(0));
+        } catch (Exception e) {
+            transaction.failure();
+        } finally {
+            transaction.close();
+        }
+    }
+
+	private static void printTree(TreeNode root) {
+        List<TreeNode> toVisit = new ArrayList<TreeNode>();
+
+		toVisit.add(root);
 		
-		List<String> visited = new ArrayList<String>();
-
-		Transaction transaction = newGraphDatabaseService.beginTx();
-
-		try {
-			Iterable<Node> nodes = newGraphDatabaseService.getAllNodes();
-			//build a map of nodes to corresponding tree nodes
-			for(Node node: nodes) {
-				nodeToTreeNodeMap.put(node, new TreeNode(node.getProperty("name").toString(), null));
+        while (!(toVisit.isEmpty())) {
+            // while we still have nodes to visit
+            TreeNode currentNode = toVisit.get(0);
+            toVisit.remove(0);
+		
+			System.out.println("================="+currentNode.getName()+"============");
+			List<TreeNode> children = currentNode.getChildren();
+			for (TreeNode child : children) {
+				System.out.println("Child Node: "+child.getName());
+				toVisit.add(child);
 			}
-
-			//find the start node and add the corresponding treenode to the toVisit list
-			for(Node node: nodes) {
-				if (node.getProperty("name").equals("start")) {
-					toVisit.add(nodeToTreeNodeMap.get(node)); // add the start node to the toVisit list
-					break; // break when we find the start node
-				}
-			}
-			
-			while (!(toVisit.isEmpty())) {
-				// while we still have nodes to visit
-				TreeNode currentNode = toVisit.get(0);
-				toVisit.remove(0);
-				if (visited.contains(currentNode.getName())) {
-					continue;
-				}
-				//String[] outputServices = generateDatabase.getInputOutputServicesForSubGraph(currentNode, graphNodes, "outputServices", newGraphDatabaseService);
-				//Optional<Node> correspondingNode = findCorrespondingNode(currentNode, nodeToTreeNodeMap); 
-				Node correspondingNode = findCorrespondingNode(currentNode, nodeToTreeNodeMap); 
-				
-				Iterable<Relationship> relationships = correspondingNode.getRelationships(Direction.OUTGOING);
-
-				// for each child, create a tree node and add it 
-				for (Relationship r : relationships) {
-					TreeNode n = new TreeNode(r.getProperty("To").toString(), currentNode);
-					currentNode.addChild(n); // add the child to the current node's children
-					toVisit.add(n); // add the child to the toVisit list
-				}
-				
-				//if (correspondingNode.isPresent()) {
-					//Object obj = correspondingNode.get().getProperty("outputServices");
-					Object obj = correspondingNode.getProperty("outputServices");
-
-					String[] outputsArray = getOutputArray(obj); // retrieve current node's outputs
-					//System.out.println("CurrentNode:      "+currentNode.getName());
-
-/*					// for each child, create a tree node and add it ::TODO remove this, I have better way of finding children using 
- *					// r.getProperty()
-					for (int i = 0; i < outputsArray.length; i++) {
-						TreeNode n = new TreeNode(outputsArray[i], currentNode);
-						currentNode.addChild(n); // add the child to the current node's children
-						toVisit.add(n); // add the child to the toVisit list
-						//System.out.println("CHILD:      "+outputsArray[i]);
-
-					}*/
-				//}
-				tree.add(currentNode);
-				visited.add(currentNode.getName());
-				currentNode.setVisited(true);
-
-				
-				//System.out.println("+++++++++++++++   "+currentNode.getProperty("outputServices").toString());
-			}
-			
-		transaction.success();
-		printTree(tree);
-		} catch (Exception e) {
-			transaction.failure();
-		} finally {
-			transaction.close();
-		}			
-	}
-
-	private static void printTree(List<TreeNode> tree) {
-		for (TreeNode n : tree) {
+            
+/*       for (TreeNode n : tree) {
 			System.out.println("================="+n.getName()+"============");
 			List<TreeNode> children = n.getChildren();
 			for (TreeNode child : children) {
 				System.out.println("Child Node: "+child.getName());
 			}
-		}
+		}*/
+        }
 		System.out.println("+++++++++++++++++++++++++++++++++++++++DONE+++++++++++++++++++++++++++++++");
 
 	}
@@ -498,23 +609,15 @@ public class Main implements Runnable{
 	 * @param nodeToTreeNodeMap
 	 * @return
 	 */
-	//private static Optional<Node> findCorrespondingNode(TreeNode n, Map<Node, TreeNode> nodeToTreeNodeMap) {
-		
-		private static Node findCorrespondingNode(TreeNode n, Map<Node, TreeNode> map) {	
-		    for (Entry<Node, TreeNode> e : map.entrySet()) {
-		        if (e.getValue().getName().equals(n.getName())) {
-		            return e.getKey();
-		        }
-		    }
-		    return null;
-		}
-/*		return nodeToTreeNodeMap.entrySet()
-				.stream()
-				.filter(entry -> entry.getValue().getName().equals(n))
-				//.filter(entry -> Objects.equals(entry.getValue(), n))
-				.map(Map.Entry::getKey).findFirst();
-	}*/
-	
+	private static Node findCorrespondingNode(TreeNode n, Map<Node, TreeNode> map) {	
+	    for (Entry<Node, TreeNode> e : map.entrySet()) {
+	        if (e.getValue().getName().equals(n.getName())) {
+	            return e.getKey();
+	        }
+	    }
+	    return null;
+	}
+
 	private static String[] getOutputArray(Object obj) {
 			String ips = Arrays.toString((String[]) obj).substring(1, Arrays.toString((String[]) obj).length()-1);
 			String[] tempInputs = ips.split("\\s*,\\s*");
