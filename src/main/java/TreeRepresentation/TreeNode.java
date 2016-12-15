@@ -10,7 +10,6 @@ public class TreeNode {
 	private TreeNode parent;
 	private String name;
 	private List<TreeNode> children = new ArrayList<TreeNode>();
-	private List<String> inputs = new ArrayList<String>();
 	private boolean visited = false;
 	
 	private Set<String> inputSet = new HashSet<String>();
@@ -48,11 +47,6 @@ public class TreeNode {
 		return children;
 	}
 	
-	public List<String> getInputs() {
-		return inputs;
-	}
-
-
 	public void setName(String s) {
 		name = s;
 	}
@@ -61,5 +55,35 @@ public class TreeNode {
 		return name;
 	}
 
+	public Set<String> getInputSet() {
+		return inputSet;
+	}
+
+	public void setInputSet(Set<String> inputSet) {
+		this.inputSet = inputSet;
+	}
+
+	public Set<String> getOutputSet() {
+		return outputSet;
+	}
+
+	public void setOutputSet(Set<String> outputSet) {
+		this.outputSet = outputSet;
+	}
 	
+	public void addAllInputs(Set<String> set) {
+		for (String s : set) {
+			if (!(inputSet.contains(s))) {
+				inputSet.add(s);
+			}
+		}
+	}
+
+	public void addAllOutputs(Set<String> set) {
+		for (String s : set) {
+			if (!(outputSet.contains(s))) {
+				outputSet.add(s);
+			}
+		}
+	}
 }

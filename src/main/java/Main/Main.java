@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Direction;
@@ -481,8 +482,14 @@ public class Main implements Runnable{
                     }
                     else {
                         if (numOfChildren == 1) {
-                        	//currentNode.addChild(new TreeNode(currentNode.getName().toString(), currentNode.getParent()));
-                        	currentNode.addChild(new TreeNode(currentNode.getName().toString(), currentNode));
+                        	TreeNode newNode = new TreeNode(currentNode.getName(), currentNode);
+                            Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("inputs")));
+                            Set<String> outputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("outputs")));
+                            newNode.setInputSet(inputSet);
+                            newNode.setOutputSet(outputSet);
+                            
+                            currentNode.addChild(newNode); 
+                        	//currentNode.addChild(new TreeNode(currentNode.getName().toString(), currentNode));
                         	currentNode.setName("Sequence");
                         	TreeNode n2 = new TreeNode(r.getProperty("To").toString(), currentNode);
                         	currentNode.addChild(n2);
@@ -542,17 +549,24 @@ public class Main implements Runnable{
                 //}
                 
              
-                Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("inputs")));
+/*                Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("inputs")));
 				//inputs = getNodePropertyArray(correspondingNode, "inputServices");
 				System.out.println("========  "+currentNode.getName()+"    =======");
 
 				for (String s : inputSet) {
 					System.out.println("-----------------------------------------         " +s);
-				}
+				}*/
                 
                 if (currentNode.getName().equals("start") && numOfChildren > 1) {
                 	currentNode.setName("Parallel"); 
                 }
+                
+                    Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("inputs")));
+                    Set<String> outputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("outputs")));
+                    currentNode.setInputSet(inputSet);
+                    currentNode.setOutputSet(outputSet);
+                
+                
                 tree.add(currentNode);
                 if (!(parallel.getName().equals(""))) {
                     tree.add(parallel);
@@ -565,13 +579,94 @@ public class Main implements Runnable{
             }
 
         transaction.success();
-        //printTree(tree.get(0));
+        updateTreeInputOutput(tree.get(0));
+        printTree(tree.get(0));
         } catch (Exception e) {
             transaction.failure();
         } finally {
             transaction.close();
         }
     }
+
+    /**
+     * Breadth-First Traversal through tree updating the current node's
+     * inputs and outputs.
+     * 
+     * @param treeNode
+     */
+	private static void updateTreeInputOutput(TreeNode root) {
+        List<TreeNode> toVisit = new ArrayList<TreeNode>();
+        Stack<TreeNode> reversalStack = new Stack<TreeNode>();
+        
+		toVisit.add(root);
+
+        // breadth-first traversal
+        while (!(toVisit.isEmpty())) {
+
+            // while we still have nodes to visit
+            TreeNode currentNode = toVisit.get(0);
+            toVisit.remove(0);
+            
+            if (currentNode.getName().equals("Parallel")) {
+            	reversalStack.push(currentNode); 
+            	
+    			List<TreeNode> children = currentNode.getChildren();
+
+    			for (TreeNode child : children) {
+    				toVisit.add(child);
+    				currentNode.getInputSet().addAll(child.getInputSet()); // add all the children's inputs to current node's input set
+    				///currentNode.getOutputSet().addAll(child.getOutputSet()); // add all the children's outputs to the current node's output set
+    			}
+            }
+            else if (currentNode.getName().equals("Sequence")) {
+            	reversalStack.push(currentNode);
+
+    			List<TreeNode> children = currentNode.getChildren();
+
+    			// add the current node's parent input set to current node's input set	
+    			if (currentNode.getParent() != null) {
+    				currentNode.getInputSet().addAll(currentNode.getParent().getInputSet());
+    			}
+    			
+    			for (TreeNode child : children) {
+    				toVisit.add(child);
+    				if (child.getName().equals("Parallel") || child.getName().equals("Sequence")) { // we only want the left child's inputs
+    					continue;
+    				}
+    				currentNode.getInputSet().addAll(child.getInputSet());
+    			}
+    			
+/*    			// add left and right child's output set to current node's output set
+    			for (TreeNode child : children) {
+    				currentNode.getOutputSet().addAll(child.getOutputSet()); 
+    			}*/
+            }
+            
+        }
+        
+        while (!(reversalStack.isEmpty())) {
+        	TreeNode currentNode = reversalStack.pop();
+        	
+        	 if (currentNode.getName().equals("Parallel")) {
+            	
+     			List<TreeNode> children = currentNode.getChildren();
+
+     			for (TreeNode child : children) {
+     				currentNode.getOutputSet().addAll(child.getOutputSet()); // add all the children's outputs to the current node's output set
+     			}
+             }
+             else if (currentNode.getName().equals("Sequence")) {
+     			List<TreeNode> children = currentNode.getChildren();
+     			
+     			// add left and right child's output set to current node's output set
+     			for (TreeNode child : children) {
+    				currentNode.getOutputSet().addAll(child.getOutputSet()); 
+     			}
+             }
+        }
+        
+	}
+
 
 	private static void printTree(TreeNode root) {
         List<TreeNode> toVisit = new ArrayList<TreeNode>();
@@ -585,6 +680,18 @@ public class Main implements Runnable{
 		
 			System.out.println("================="+currentNode.getName()+"============");
 			List<TreeNode> children = currentNode.getChildren();
+			if (currentNode.getParent() != null) {
+				System.out.println("PARENT Node: "+currentNode.getParent().getName());
+			}
+
+			for (String i : currentNode.getInputSet()) {
+				System.out.println("Input Node: "+i);
+			}
+			
+			for (String i : currentNode.getOutputSet()) {
+				System.out.println("Output Node: "+i);
+			}
+
 			for (TreeNode child : children) {
 				System.out.println("Child Node: "+child.getName());
 				toVisit.add(child);
