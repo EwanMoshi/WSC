@@ -256,9 +256,9 @@ public class Main implements Runnable{
 				
 				
 				// find out how to access this new non-redundant database
-				buildLayers(generateDatabase2, newGraphDatabaseService, entry.getKey());
+				Map<Integer, List<Node>> nodeLayers = buildLayers(generateDatabase2, newGraphDatabaseService, entry.getKey());
 				//test(generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
-				
+				graphToTree(nodeLayers, generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
 				
 				registerShutdownHook(subGraphDatabaseService,"Reduced");
 				registerShutdownHook(newGraphDatabaseService, "Result");
@@ -405,7 +405,59 @@ public class Main implements Runnable{
 	}
 
 
-    private static void buildLayers(GenerateDatabase generateDatabase2, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes) {
+    private static void graphToTree(Map<Integer, List<Node>> nodeLayers, GenerateDatabase generateDatabase, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes, String dbPath) {
+		Transaction transaction = newGraphDatabaseService.beginTx();
+        List<TreeNode> tree = new ArrayList<TreeNode>();
+
+    	TreeNode previous = null; // a node to store the sequence node from previous iteration
+    	
+    	try {
+	    	// iterate over the layers in reverse
+	    	for (int i = nodeLayers.size()-1; i >= 0; i--) {
+	    		TreeNode sequenceCurrent = new TreeNode("Sequence", null);
+	    		
+	    		if (previous != null) {
+	    			if (nodeLayers.get(i).get(0).getProperty("name").toString().equals("start")) {
+	    				TreeNode startNode = new TreeNode("start", previous);
+	    				previous.addChild(startNode);
+	    				break;
+	    			}
+	    			else {
+		    			sequenceCurrent.setParent(previous);
+		    			previous.addChild(sequenceCurrent);
+	    			}
+	    		}
+	    		
+	    		if (nodeLayers.get(i).size() == 1) { // if the number of nodes in current layer = 1
+	    											 // create a single child with the current sequence node as its parent
+	    			TreeNode n = new TreeNode(nodeLayers.get(i).get(0).getProperty("name").toString(), sequenceCurrent);
+	    			sequenceCurrent.addChild(n);
+	    		}
+	    		else if (nodeLayers.get(i).size() > 1) { // else if the number of nodes in current layer > 1
+	    												 // create a parallel node with all the nodes in current layer as its children
+	    			TreeNode parallel = new TreeNode("Parallel", sequenceCurrent);
+	    			for (Node ch : nodeLayers.get(i)) {
+	    				TreeNode child = new TreeNode(ch.getProperty("name").toString(), parallel);
+	    				parallel.addChild(child);
+	    			}
+	    			sequenceCurrent.addChild(parallel);
+	    			
+	    		}
+	    		tree.add(sequenceCurrent);
+	    		previous = sequenceCurrent; // set previous to current (for next iteration)
+	    	}
+
+	       transaction.success();
+	       printTree(tree.get(0));
+	    } catch (Exception e) {
+	        transaction.failure();
+	    } finally {
+	        transaction.close();
+	    }
+	}
+
+
+	private static Map<Integer, List<Node>> buildLayers(GenerateDatabase generateDatabase2, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes) {
 		Transaction transaction = newGraphDatabaseService.beginTx();
 		
         Map<Integer, List<Node>> nodeLayers = new HashMap<Integer, List<Node>>();
@@ -445,6 +497,7 @@ public class Main implements Runnable{
 			
 			List<Integer> layersToRemove = new ArrayList<Integer>();
 			
+			// find and mark empty layers (if they exist)
 		    for (Entry<Integer, List<Node>> e : nodeLayers.entrySet()) {
 			    	if (e.getValue().isEmpty()) {
 			    		layersToRemove.add(e.getKey());
@@ -456,13 +509,13 @@ public class Main implements Runnable{
 		    	nodeLayers.remove(layer);
 		    }
 		    
-		    System.out.println("--------------------DEBUGGING-------------------");
+/*		    System.out.println("--------------------DEBUGGING-------------------");
 		    for (Map.Entry<Integer, List<Node>> e : nodeLayers.entrySet()) {
 			    System.out.println("LAYER   "+e.getKey());
 			    for (Node n : e.getValue()) {
 			    	System.out.println(n.getProperty("name").toString());
 			    }
-		    }
+		    }*/
 		    
 	        transaction.success();
         } catch (Exception e) {
@@ -470,6 +523,8 @@ public class Main implements Runnable{
         } finally {
             transaction.close();
         }
+        
+        return nodeLayers;
 
     }
 		
