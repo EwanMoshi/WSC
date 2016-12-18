@@ -17,15 +17,19 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.graphalgo.GraphAlgoFactory;
+import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.Traversal;
 
 import TreeRepresentation.TreeNode;
 import component.ServiceNode;
@@ -252,7 +256,8 @@ public class Main implements Runnable{
 				
 				
 				// find out how to access this new non-redundant database
-				test(generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
+				buildLayers(generateDatabase2, newGraphDatabaseService, entry.getKey());
+				//test(generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
 				
 				
 				registerShutdownHook(subGraphDatabaseService,"Reduced");
@@ -400,7 +405,78 @@ public class Main implements Runnable{
 	}
 
 
-    private static void test(GenerateDatabase generateDatabase, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes, String dbPath) {
+    private static void buildLayers(GenerateDatabase generateDatabase2, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes) {
+		Transaction transaction = newGraphDatabaseService.beginTx();
+		
+        Map<Integer, List<Node>> nodeLayers = new HashMap<Integer, List<Node>>();
+
+        for (int i = 0; i < graphNodes.size(); i++) {
+        	nodeLayers.put(i, new ArrayList<Node>());
+        }
+        
+        try {
+	        // returns an algorithm for finding all paths between two nodes
+			PathFinder<Path> allPathsAlgorithm = GraphAlgoFactory.allPaths(Traversal.pathExpanderForAllTypes(Direction.OUTGOING), graphNodes.size());
+			
+			Node startNode = null;
+			
+            Iterable<Node> nodes = newGraphDatabaseService.getAllNodes();
+
+	        for(Node node: nodes) {
+	            if (node.getProperty("name").equals("start")) {
+	            	startNode = node;
+	            	break; // break when we find the start node
+	            }
+	        }
+			
+	        // for each node in the composition
+	        // find all paths between start and current node and store the length of the longest path
+			for (Node n : nodes) {
+				int maxLength = 0;
+				Iterable<Path> paths = allPathsAlgorithm.findAllPaths(startNode, n);
+				for(Path p : paths) { 
+					if (p.length() > maxLength) {
+						maxLength = p.length();
+					}
+				}
+				
+				nodeLayers.get(maxLength).add(n); //store the current node and it's max length
+			}
+			
+			List<Integer> layersToRemove = new ArrayList<Integer>();
+			
+		    for (Entry<Integer, List<Node>> e : nodeLayers.entrySet()) {
+			    	if (e.getValue().isEmpty()) {
+			    		layersToRemove.add(e.getKey());
+			    	}
+		    }
+	
+		    // remove the empty layers
+		    for (Integer layer : layersToRemove) {
+		    	nodeLayers.remove(layer);
+		    }
+		    
+		    System.out.println("--------------------DEBUGGING-------------------");
+		    for (Map.Entry<Integer, List<Node>> e : nodeLayers.entrySet()) {
+			    System.out.println("LAYER   "+e.getKey());
+			    for (Node n : e.getValue()) {
+			    	System.out.println(n.getProperty("name").toString());
+			    }
+		    }
+		    
+	        transaction.success();
+        } catch (Exception e) {
+            transaction.failure();
+        } finally {
+            transaction.close();
+        }
+
+    }
+		
+	
+
+
+	private static void test(GenerateDatabase generateDatabase, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes, String dbPath) {
         //GraphDatabaseService gs = new GraphDatabaseFactory().newEmbeddedDatabase(new File(dbPath));
         Map<Node, TreeNode> nodeToTreeNodeMap = new HashMap<Node, TreeNode>();
 
