@@ -419,6 +419,12 @@ public class Main implements Runnable{
 	    		if (previous != null) {
 	    			if (nodeLayers.get(i).get(0).getProperty("name").toString().equals("start")) {
 	    				TreeNode startNode = new TreeNode("start", previous);
+	    				
+		                Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) nodeLayers.get(i).get(0).getProperty("inputs")));
+		                Set<String> outputSet = new HashSet<String>(Arrays.asList((String[]) nodeLayers.get(i).get(0).getProperty("outputs")));
+		                startNode.setInputSet(inputSet);
+		                startNode.setOutputSet(outputSet);
+	    				
 	    				previous.addChild(startNode);
 	    				break;
 	    			}
@@ -428,16 +434,33 @@ public class Main implements Runnable{
 	    			}
 	    		}
 	    		
-	    		if (nodeLayers.get(i).size() == 1) { // if the number of nodes in current layer = 1
-	    											 // create a single child with the current sequence node as its parent
+	    		 // if the number of nodes in current layer = 1
+				 // create a single child with the current sequence node as its parent
+	    		if (nodeLayers.get(i).size() == 1) {
 	    			TreeNode n = new TreeNode(nodeLayers.get(i).get(0).getProperty("name").toString(), sequenceCurrent);
+	    			
+	                Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) nodeLayers.get(i).get(0).getProperty("inputs")));
+	                Set<String> outputSet = new HashSet<String>(Arrays.asList((String[]) nodeLayers.get(i).get(0).getProperty("outputs")));
+	                n.setInputSet(inputSet);
+	                n.setOutputSet(outputSet);
+	    			
 	    			sequenceCurrent.addChild(n);
 	    		}
-	    		else if (nodeLayers.get(i).size() > 1) { // else if the number of nodes in current layer > 1
-	    												 // create a parallel node with all the nodes in current layer as its children
+	    		// else if the number of nodes in current layer > 1
+				// create a parallel node with all the nodes in current layer as its children
+	    		else if (nodeLayers.get(i).size() > 1) { 
 	    			TreeNode parallel = new TreeNode("Parallel", sequenceCurrent);
 	    			for (Node ch : nodeLayers.get(i)) {
 	    				TreeNode child = new TreeNode(ch.getProperty("name").toString(), parallel);
+	    				
+		                Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) ch.getProperty("inputs")));
+		                Set<String> outputSet = new HashSet<String>(Arrays.asList((String[]) ch.getProperty("outputs")));
+		                child.setInputSet(inputSet);
+		                child.setOutputSet(outputSet);
+	    				
+		                parallel.getInputSet().addAll(inputSet);
+		                parallel.getOutputSet().addAll(outputSet);
+
 	    				parallel.addChild(child);
 	    			}
 	    			sequenceCurrent.addChild(parallel);
@@ -445,9 +468,12 @@ public class Main implements Runnable{
 	    		}
 	    		tree.add(sequenceCurrent);
 	    		previous = sequenceCurrent; // set previous to current (for next iteration)
+	    		
+               
 	    	}
 
 	       transaction.success();
+	       updateTreeInputOutput(tree.get(0));
 	       printTree(tree.get(0));
 	    } catch (Exception e) {
 	        transaction.failure();
@@ -530,8 +556,17 @@ public class Main implements Runnable{
 		
 	
 
-
-	private static void test(GenerateDatabase generateDatabase, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes, String dbPath) {
+	/**
+	 * OLD Method
+	 * 
+	 * Converts a graph to tree. This version has redundancy and is the common (I think) approach found in literature.
+	 * 
+	 * @param generateDatabase
+	 * @param newGraphDatabaseService
+	 * @param graphNodes
+	 * @param dbPath
+	 */
+	private static void graphToTreeOld(GenerateDatabase generateDatabase, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes, String dbPath) {
         //GraphDatabaseService gs = new GraphDatabaseFactory().newEmbeddedDatabase(new File(dbPath));
         Map<Node, TreeNode> nodeToTreeNodeMap = new HashMap<Node, TreeNode>();
 
@@ -692,10 +727,10 @@ public class Main implements Runnable{
                 	currentNode.setName("Parallel"); 
                 }
                 
-                    Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("inputs")));
-                    Set<String> outputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("outputs")));
-                    currentNode.setInputSet(inputSet);
-                    currentNode.setOutputSet(outputSet);
+                Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("inputs")));
+                Set<String> outputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("outputs")));
+                currentNode.setInputSet(inputSet);
+                currentNode.setOutputSet(outputSet);
                 
                 
                 tree.add(currentNode);
@@ -761,7 +796,8 @@ public class Main implements Runnable{
     			
     			for (TreeNode child : children) {
     				toVisit.add(child);
-    				if (child.getName().equals("Parallel") || child.getName().equals("Sequence")) { // we only want the left child's inputs
+    				//if (child.getName().equals("Parallel") || child.getName().equals("Sequence")) { // we only want the left child's inputs 
+    				if (child.getName().equals("Sequence")) { // we only want the left child's inputs (parallel and web services)
     					continue;
     				}
     				currentNode.getInputSet().addAll(child.getInputSet());
@@ -799,6 +835,11 @@ public class Main implements Runnable{
 	}
 
 
+	/**
+	 * Helper Method to check whether the tree was correctly converted from a graph.
+	 * 
+	 * @param root
+	 */
 	private static void printTree(TreeNode root) {
         List<TreeNode> toVisit = new ArrayList<TreeNode>();
 

@@ -5,21 +5,80 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class TreeNode {
+import ECJ.WSCData;
+import ec.EvolutionState;
+import ec.Problem;
+import ec.gp.ADFStack;
+import ec.gp.GPData;
+import ec.gp.GPIndividual;
+import ec.gp.GPNode;
+
+public class TreeNode extends GPNode {
 	
 	private TreeNode parent;
 	private String name;
-	private List<TreeNode> children = new ArrayList<TreeNode>();
+	private List<TreeNode> ch = new ArrayList<TreeNode>();
 	private boolean visited = false;
 	
 	private Set<String> inputSet = new HashSet<String>();
 	private Set<String> outputSet = new HashSet<String>();
 	
-	// 	public TreeNode(String name, TreeNode parent, List<TreeNode> children, List<String> inputs) old consutrctor
+	// 	public TreeNode(String name, TreeNode parent, List<TreeNode> children, List<String> inputs) old constructor
 
 	public TreeNode(String name, TreeNode parent) {
 		this.name = name;
 		this.parent = parent;
+	}
+	
+	
+	@Override
+	public void eval(EvolutionState state, int thread, GPData input, ADFStack stack, GPIndividual individual, Problem problem) {
+		WSCData rd = ((WSCData) (input));
+		
+		if (name.equals("Sequence")) { // sequence node
+			rd.inputSet = inputSet;
+			rd.outputSet = outputSet;
+			
+			children[0].eval(state, thread, input, stack, individual, problem);
+			Set<String> in = rd.inputSet; // I think this only works if child[0] is the left child/child that isn't the sequence
+			
+			children[1].eval(state, thread, input, stack, individual, problem);
+
+			rd.inputSet = in;
+		}
+		else if (name.equals("Parallel")) { //parallel node
+			for (GPNode child : children) {
+				child.eval(state, thread, input, stack, individual, problem);
+			}
+		}
+		else { // service node
+			rd.inputSet = inputSet;
+			rd.outputSet = outputSet;
+		}
+		
+		// store the input and output information in this node? ::TODO Do I need this?
+		inputSet = rd.inputSet;
+		outputSet = rd.outputSet;
+	}
+	
+	@Override
+	public TreeNode clone() {
+		// this should work for all three kinds of nodes (sequence, parallel, and service)
+		TreeNode newNode = new TreeNode(name, parent);
+		GPNode[] newChildren = new GPNode[children.length];
+		for (int i = 0; i < children.length; i++) {
+			newChildren[i] = (GPNode) children[i].clone();
+			newChildren[i].parent = newNode;
+		}
+		newNode.children = newChildren;
+		newNode.inputSet = inputSet;
+		newNode.outputSet = outputSet;
+		return newNode;
+	}
+	
+	@Override
+	public String toString() {
+		return null;
 	}
 	
 	public boolean getVisited() {
@@ -31,7 +90,7 @@ public class TreeNode {
 	}
 	
 	public void addChild(TreeNode n) {
-		this.children.add(n);
+		this.ch.add(n);
 	}
 	
 	
@@ -44,7 +103,7 @@ public class TreeNode {
 	}
 	
 	public List<TreeNode> getChildren() {
-		return children;
+		return ch;
 	}
 	
 	public void setName(String s) {
@@ -86,4 +145,5 @@ public class TreeNode {
 			}
 		}
 	}
+
 }
