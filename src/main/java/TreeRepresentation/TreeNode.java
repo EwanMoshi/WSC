@@ -36,11 +36,20 @@ public class TreeNode extends GPNode {
 		WSCData rd = ((WSCData) (input));
 		
 		if (name.equals("Sequence")) { // sequence node
+			for (TreeNode n : ch) {
+				if (n.getName().equals("Sequence")) { // place sequence nodes in the right child and others (parallel/service nodes) as left
+					children[1] = n;
+				}
+				else {
+					children[0] = n;
+				}
+			}
+			
 			rd.inputSet = inputSet;
 			rd.outputSet = outputSet;
 			
 			children[0].eval(state, thread, input, stack, individual, problem);
-			Set<String> in = rd.inputSet; // I think this only works if child[0] is the left child/child that isn't the sequence
+			Set<String> in = rd.inputSet; // I think this only works if child[0] is the left child/the child that isn't the sequence (could be right depending on representation)
 			
 			children[1].eval(state, thread, input, stack, individual, problem);
 
@@ -74,6 +83,20 @@ public class TreeNode extends GPNode {
 		newNode.inputSet = inputSet;
 		newNode.outputSet = outputSet;
 		return newNode;
+	}
+	
+	
+	@Override
+	public int expectedChildren() {
+		if (name.equals("Sequence")) {
+			return 2;
+		}
+		else if (name.equals("Parallel")) {
+			return -1; // negative number means "any number of children"
+		}
+		else {
+			return 0;
+		}
 	}
 	
 	@Override
