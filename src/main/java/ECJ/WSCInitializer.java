@@ -6,7 +6,11 @@ import ec.util.Parameter;
 
 public class WSCInitializer extends GPInitializer {
 
-	
+	public static final int TIME = 0;
+	public static final int COST = 1;
+	public static final int AVAILABILITY = 2;
+	public static final int RELIABILITY = 3;
+
 	public final double minAvailability = 0.0;
 	public double maxAvailability = -1.0;
 	public final double minReliability = 0.0;
@@ -19,7 +23,7 @@ public class WSCInitializer extends GPInitializer {
 	public double w2;
 	public double w3;
 	public double w4;
-	
+
 	@Override
 	public void setup(EvolutionState state, Parameter base) {
 		super.setup(state, base);

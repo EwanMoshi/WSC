@@ -94,7 +94,7 @@ public class Main implements Runnable{
 
 	public static void main( String[] args ) throws IOException, OuchException{
 		Main neo4jwsc = new Main();
-		//		Thread t = new Thread(neo4jwsc,"Neo4jThread");  
+		//		Thread t = new Thread(neo4jwsc,"Neo4jThread");
 		//		t.start();
 		databaseName = "wsc"+year+"dataset"+dataSet;
 		String path;
@@ -115,7 +115,7 @@ public class Main implements Runnable{
 		}
 		//load files
 		long startTime = System.currentTimeMillis();
-		loadFiles();		
+		loadFiles();
 		long endTime = System.currentTimeMillis();
 		neo4jwsc.records.put("Load files", endTime - startTime);
 		System.out.println("Load files Total execution time: " + (endTime - startTime) );
@@ -123,7 +123,7 @@ public class Main implements Runnable{
 
 		//populateTaxonomytree
 		startTime = System.currentTimeMillis();
-		populateTaxonomytree(); // Algorithm 1		
+		populateTaxonomytree(); // Algorithm 1
 		endTime = System.currentTimeMillis();
 		neo4jwsc.records.put("Populate Taxonomy Tree", endTime - startTime);
 		System.out.println("Populate Taxonomy Tree total execution time: " + (endTime - startTime) );
@@ -138,7 +138,7 @@ public class Main implements Runnable{
 			if (f.exists() && f.isDirectory()) {
 				dbExist = true;
 			}else{
-				dbExist = false;   
+				dbExist = false;
 			}
 			if(dbExist){
 				startTime = System.currentTimeMillis();
@@ -150,7 +150,7 @@ public class Main implements Runnable{
 			}else{
 
 				startTime = System.currentTimeMillis();
-				neo4jwsc.generateDB(null,Neo4j_ServicesDBPath,"original",databaseName);			
+				neo4jwsc.generateDB(null,Neo4j_ServicesDBPath,"original",databaseName);
 				endTime = System.currentTimeMillis();
 				neo4jwsc.records.put("Create new db", endTime - startTime);
 				System.out.println("Create new db Total execution time: " + (endTime - startTime) );
@@ -165,7 +165,7 @@ public class Main implements Runnable{
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			neo4jwsc.generateDB(null,Neo4j_testServicesDBPath,"original test", null);						
+			neo4jwsc.generateDB(null,Neo4j_testServicesDBPath,"original test", null);
 			endTime = System.currentTimeMillis();
 			neo4jwsc.records.put("Create new test db", endTime - startTime);
 			System.out.println("Create new test db Total execution time: " + (endTime - startTime) );
@@ -199,7 +199,7 @@ public class Main implements Runnable{
 		if(!neo4jwsc.runMultipileTime){
 			//find compositions
 			startTime = System.currentTimeMillis();
-			Map<List<Node>, Map<String,Map<String, Double>>> resultWithQos =findCompositions();			
+			Map<List<Node>, Map<String,Map<String, Double>>> resultWithQos =findCompositions();
 			endTime = System.currentTimeMillis();
 			neo4jwsc.records.put("generate candidates", endTime - startTime);
 			System.out.println();
@@ -220,20 +220,20 @@ public class Main implements Runnable{
 
 			// resultWithQos.size() is 50 becuase candidateSize is 50 (maybe this is initial population size?)
 			// do I begin performing GP from this point once I have my candidates?
-	
+
 			// create a new DB containing the resulting composition
 			//::TODO I probably don't want to find the best result - rather just keep population
 			// the findCompositions() method on line 193 automatically returns the best (QoS) composition
 			startTime = System.currentTimeMillis();
 			int newDBCounter = 0; //::TODO remoev this later and from line 228, it was just to create a lot of small databases with different compositions
-			
+
 			// helper method to see how the result is computed ::TODO remove
 /*			try {
 				printCandidates(resultWithQos);
 			} catch (InterruptedException e1) {
 				e1.printStackTrace();
 			}*/
-			
+
 			for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry : resultWithQos.entrySet()) {
 				newDBCounter++;
 /*				try { ::TODO maybe enable this later?
@@ -241,7 +241,7 @@ public class Main implements Runnable{
 				} catch (IOException e) {
 					e.printStackTrace();
 				}*/
-				//				generateDB(entry.getKey(),newResultDBPath,"result db", null);		
+				//				generateDB(entry.getKey(),newResultDBPath,"result db", null);
 				GenerateDatabase generateDatabase2 = new GenerateDatabase(entry.getKey(), subGraphDatabaseService, newResultDBPath+newDBCounter);
 				generateDatabase2.createDbService();
 				GraphDatabaseService newGraphDatabaseService = generateDatabase2.getGraphDatabaseService();
@@ -252,14 +252,14 @@ public class Main implements Runnable{
 				//				System.out.println("findCompositions.getBestRels()"+bestRels);
 				//				generateDatabase2.set(bestRels);
 				generateDatabase2.addServiceNodeRelationShip();
-				removeRedundantRel(newGraphDatabaseService, generateDatabase2);	
-				
-				
+				removeRedundantRel(newGraphDatabaseService, generateDatabase2);
+
+
 				// find out how to access this new non-redundant database
 				Map<Integer, List<Node>> nodeLayers = buildLayers(generateDatabase2, newGraphDatabaseService, entry.getKey());
 				//test(generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
 				graphToTree(nodeLayers, generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
-				
+
 				registerShutdownHook(subGraphDatabaseService,"Reduced");
 				registerShutdownHook(newGraphDatabaseService, "Result");
 			}
@@ -273,8 +273,8 @@ public class Main implements Runnable{
 		// run 30 times and find best composition from each iteration
 		// I probably want to set runMultipileTime to false so that the if statement above is executed.
 		// This way the "initial population" is generated and from there I can begin using GP to evolve
-		// the solutions 
-		else { 
+		// the solutions
+		else {
 			int count  = 0;
 			while(count <neo4jwsc.timesToRun) {
 				//find compositions
@@ -335,10 +335,10 @@ public class Main implements Runnable{
 					System.out.println();
 				} catch (Exception e) {
 					System.out.println(e);
-					System.out.println("print populations error.."); 
+					System.out.println("print populations error..");
 				} finally {
 					tx.close();
-				}	
+				}
 				endTime = System.currentTimeMillis();
 				neo4jwsc.bestResultsTimes.put(count, (double) (endTime - startTime));
 				neo4jwsc.records.put("generate best result", endTime - startTime);
@@ -349,7 +349,7 @@ public class Main implements Runnable{
 				System.out.println();
 				count++;
 			}
-			
+
 			if(neo4jwsc.runTestFiles){
 				FileWriter fw = new FileWriter("test-dataset-bestResults.stat");
 				for(Entry<Integer,Map<String, String>> entry : neo4jwsc.bestResults.entrySet()){
@@ -401,7 +401,7 @@ public class Main implements Runnable{
 			fw.write(entry.getKey()+"    " +entry.getValue()+ "\n");
 		}
 		fw.close();
-		neo4jwsc.setRunning(false);  
+		neo4jwsc.setRunning(false);
 	}
 
 
@@ -410,21 +410,29 @@ public class Main implements Runnable{
         List<TreeNode> tree = new ArrayList<TreeNode>();
 
     	TreeNode previous = null; // a node to store the sequence node from previous iteration
-    	
+
     	try {
 	    	// iterate over the layers in reverse
 	    	for (int i = nodeLayers.size()-1; i >= 0; i--) {
 	    		TreeNode sequenceCurrent = new TreeNode("Sequence", null);
-	    		
+
 	    		if (previous != null) {
 	    			if (nodeLayers.get(i).get(0).getProperty("name").toString().equals("start")) {
 	    				TreeNode startNode = new TreeNode("start", previous);
-	    				
+
 		                Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) nodeLayers.get(i).get(0).getProperty("inputs")));
 		                Set<String> outputSet = new HashSet<String>(Arrays.asList((String[]) nodeLayers.get(i).get(0).getProperty("outputs")));
 		                startNode.setInputSet(inputSet);
 		                startNode.setOutputSet(outputSet);
-	    				
+
+		                double[] qos = new double[3];
+		                qos[0] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightTime").toString());
+		                qos[1] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightCost").toString());
+		                qos[2] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightAvailibility").toString());
+		                qos[3] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightReliability").toString());
+
+		                startNode.setQos(qos);
+
 	    				previous.addChild(startNode);
 	    				break;
 	    			}
@@ -433,43 +441,59 @@ public class Main implements Runnable{
 		    			previous.addChild(sequenceCurrent);
 	    			}
 	    		}
-	    		
+
 	    		 // if the number of nodes in current layer = 1
 				 // create a single child with the current sequence node as its parent
 	    		if (nodeLayers.get(i).size() == 1) {
 	    			TreeNode n = new TreeNode(nodeLayers.get(i).get(0).getProperty("name").toString(), sequenceCurrent);
-	    			
+
 	                Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) nodeLayers.get(i).get(0).getProperty("inputs")));
 	                Set<String> outputSet = new HashSet<String>(Arrays.asList((String[]) nodeLayers.get(i).get(0).getProperty("outputs")));
 	                n.setInputSet(inputSet);
 	                n.setOutputSet(outputSet);
-	    			
+
+	                double[] qos = new double[4];
+	                qos[0] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightTime").toString());
+	                qos[1] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightCost").toString());
+	                qos[2] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightAvailibility").toString());
+	                qos[3] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightReliability").toString());
+
+	                n.setQos(qos);
+
 	    			sequenceCurrent.addChild(n);
 	    		}
 	    		// else if the number of nodes in current layer > 1
 				// create a parallel node with all the nodes in current layer as its children
-	    		else if (nodeLayers.get(i).size() > 1) { 
+	    		else if (nodeLayers.get(i).size() > 1) {
 	    			TreeNode parallel = new TreeNode("Parallel", sequenceCurrent);
 	    			for (Node ch : nodeLayers.get(i)) {
 	    				TreeNode child = new TreeNode(ch.getProperty("name").toString(), parallel);
-	    				
+
 		                Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) ch.getProperty("inputs")));
 		                Set<String> outputSet = new HashSet<String>(Arrays.asList((String[]) ch.getProperty("outputs")));
 		                child.setInputSet(inputSet);
 		                child.setOutputSet(outputSet);
-	    				
+
+		                double[] qos = new double[3];
+		                qos[0] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightTime").toString());
+		                qos[1] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightCost").toString());
+		                qos[2] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightAvailibility").toString());
+		                qos[3] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightReliability").toString());
+
+		                child.setQos(qos);
+
 		                parallel.getInputSet().addAll(inputSet);
 		                parallel.getOutputSet().addAll(outputSet);
 
 	    				parallel.addChild(child);
 	    			}
 	    			sequenceCurrent.addChild(parallel);
-	    			
+
 	    		}
 	    		tree.add(sequenceCurrent);
 	    		previous = sequenceCurrent; // set previous to current (for next iteration)
-	    		
-               
+
+
 	    	}
 
 	       transaction.success();
@@ -485,19 +509,19 @@ public class Main implements Runnable{
 
 	private static Map<Integer, List<Node>> buildLayers(GenerateDatabase generateDatabase2, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes) {
 		Transaction transaction = newGraphDatabaseService.beginTx();
-		
+
         Map<Integer, List<Node>> nodeLayers = new HashMap<Integer, List<Node>>();
 
         for (int i = 0; i < graphNodes.size(); i++) {
         	nodeLayers.put(i, new ArrayList<Node>());
         }
-        
+
         try {
 	        // returns an algorithm for finding all paths between two nodes
 			PathFinder<Path> allPathsAlgorithm = GraphAlgoFactory.allPaths(Traversal.pathExpanderForAllTypes(Direction.OUTGOING), graphNodes.size());
-			
+
 			Node startNode = null;
-			
+
             Iterable<Node> nodes = newGraphDatabaseService.getAllNodes();
 
 	        for(Node node: nodes) {
@@ -506,35 +530,35 @@ public class Main implements Runnable{
 	            	break; // break when we find the start node
 	            }
 	        }
-			
+
 	        // for each node in the composition
 	        // find all paths between start and current node and store the length of the longest path
 			for (Node n : nodes) {
 				int maxLength = 0;
 				Iterable<Path> paths = allPathsAlgorithm.findAllPaths(startNode, n);
-				for(Path p : paths) { 
+				for(Path p : paths) {
 					if (p.length() > maxLength) {
 						maxLength = p.length();
 					}
 				}
-				
+
 				nodeLayers.get(maxLength).add(n); //store the current node and it's max length
 			}
-			
+
 			List<Integer> layersToRemove = new ArrayList<Integer>();
-			
+
 			// find and mark empty layers (if they exist)
 		    for (Entry<Integer, List<Node>> e : nodeLayers.entrySet()) {
 			    	if (e.getValue().isEmpty()) {
 			    		layersToRemove.add(e.getKey());
 			    	}
 		    }
-	
+
 		    // remove the empty layers
 		    for (Integer layer : layersToRemove) {
 		    	nodeLayers.remove(layer);
 		    }
-		    
+
 /*		    System.out.println("--------------------DEBUGGING-------------------");
 		    for (Map.Entry<Integer, List<Node>> e : nodeLayers.entrySet()) {
 			    System.out.println("LAYER   "+e.getKey());
@@ -542,25 +566,25 @@ public class Main implements Runnable{
 			    	System.out.println(n.getProperty("name").toString());
 			    }
 		    }*/
-		    
+
 	        transaction.success();
         } catch (Exception e) {
             transaction.failure();
         } finally {
             transaction.close();
         }
-        
+
         return nodeLayers;
 
     }
-		
-	
+
+
 
 	/**
 	 * OLD Method
-	 * 
+	 *
 	 * Converts a graph to tree. This version has redundancy and is the common (I think) approach found in literature.
-	 * 
+	 *
 	 * @param generateDatabase
 	 * @param newGraphDatabaseService
 	 * @param graphNodes
@@ -653,23 +677,23 @@ public class Main implements Runnable{
                             Set<String> outputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("outputs")));
                             newNode.setInputSet(inputSet);
                             newNode.setOutputSet(outputSet);
-                            
-                            currentNode.addChild(newNode); 
+
+                            currentNode.addChild(newNode);
                         	//currentNode.addChild(new TreeNode(currentNode.getName().toString(), currentNode));
                         	currentNode.setName("Sequence");
                         	TreeNode n2 = new TreeNode(r.getProperty("To").toString(), currentNode);
                         	currentNode.addChild(n2);
                         	toVisit.add(n2);
-                       	
-                        	
+
+
 /*                        	TreeNode n = new TreeNode("Sequence", currentNode.getParent());
                         	TreeNode n2 = new TreeNode(r.getProperty("To").toString(), n);
                         	n.addChild(n2);
                         	currentNode.getParent().addChild(n);
                         	toVisit.add(n2);
                         	tree.add(n);*/
-                        	
-                        	
+
+
                         	/*TreeNode n = new TreeNode(r.getProperty("To").toString(), currentNode);
                             currentNode.addChild(new TreeNode(currentNode.getName(), currentNode));
                             currentNode.setName("Sequence");
@@ -677,7 +701,7 @@ public class Main implements Runnable{
                             toVisit.add(n);*/
                         }
                         else if (numOfChildren > 1) {
-                            currentNode.addChild(new TreeNode(currentNode.getName(), currentNode));    
+                            currentNode.addChild(new TreeNode(currentNode.getName(), currentNode));
                             currentNode.setName("Sequence"); // current becomes sequence with current as one of its children
                             parallel.setName("Parallel");
                             parallel.setParent(currentNode);
@@ -686,7 +710,7 @@ public class Main implements Runnable{
                             	TreeNode n = new TreeNode(r2.getProperty("To").toString(), parallel);
                             	parallel.addChild(n);
                             	toVisit.add(n);
-                            }      
+                            }
                             currentNode.addChild(parallel);
                             break;
                         }
@@ -713,8 +737,8 @@ public class Main implements Runnable{
 
                     }*/
                 //}
-                
-             
+
+
 /*                Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("inputs")));
 				//inputs = getNodePropertyArray(correspondingNode, "inputServices");
 				System.out.println("========  "+currentNode.getName()+"    =======");
@@ -722,17 +746,17 @@ public class Main implements Runnable{
 				for (String s : inputSet) {
 					System.out.println("-----------------------------------------         " +s);
 				}*/
-                
+
                 if (currentNode.getName().equals("start") && numOfChildren > 1) {
-                	currentNode.setName("Parallel"); 
+                	currentNode.setName("Parallel");
                 }
-                
+
                 Set<String> inputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("inputs")));
                 Set<String> outputSet = new HashSet<String>(Arrays.asList((String[]) correspondingNode.getProperty("outputs")));
                 currentNode.setInputSet(inputSet);
                 currentNode.setOutputSet(outputSet);
-                
-                
+
+
                 tree.add(currentNode);
                 if (!(parallel.getName().equals(""))) {
                     tree.add(parallel);
@@ -757,13 +781,13 @@ public class Main implements Runnable{
     /**
      * Breadth-First Traversal through tree updating the current node's
      * inputs and outputs.
-     * 
+     *
      * @param treeNode
      */
 	private static void updateTreeInputOutput(TreeNode root) {
         List<TreeNode> toVisit = new ArrayList<TreeNode>();
         Stack<TreeNode> reversalStack = new Stack<TreeNode>();
-        
+
 		toVisit.add(root);
 
         // breadth-first traversal
@@ -772,10 +796,10 @@ public class Main implements Runnable{
             // while we still have nodes to visit
             TreeNode currentNode = toVisit.get(0);
             toVisit.remove(0);
-            
+
             if (currentNode.getName().equals("Parallel")) {
-            	reversalStack.push(currentNode); 
-            	
+            	reversalStack.push(currentNode);
+
     			List<TreeNode> children = currentNode.getChildren();
 
     			for (TreeNode child : children) {
@@ -789,33 +813,33 @@ public class Main implements Runnable{
 
     			List<TreeNode> children = currentNode.getChildren();
 
-    			// add the current node's parent input set to current node's input set	
+    			// add the current node's parent input set to current node's input set
     			if (currentNode.getParent() != null) {
     				currentNode.getInputSet().addAll(currentNode.getParent().getInputSet());
     			}
-    			
+
     			for (TreeNode child : children) {
     				toVisit.add(child);
-    				//if (child.getName().equals("Parallel") || child.getName().equals("Sequence")) { // we only want the left child's inputs 
+    				//if (child.getName().equals("Parallel") || child.getName().equals("Sequence")) { // we only want the left child's inputs
     				if (child.getName().equals("Sequence")) { // we only want the left child's inputs (parallel and web services)
     					continue;
     				}
     				currentNode.getInputSet().addAll(child.getInputSet());
     			}
-    			
+
 /*    			// add left and right child's output set to current node's output set
     			for (TreeNode child : children) {
-    				currentNode.getOutputSet().addAll(child.getOutputSet()); 
+    				currentNode.getOutputSet().addAll(child.getOutputSet());
     			}*/
             }
-            
+
         }
-        
+
         while (!(reversalStack.isEmpty())) {
         	TreeNode currentNode = reversalStack.pop();
-        	
+
         	 if (currentNode.getName().equals("Parallel")) {
-            	
+
      			List<TreeNode> children = currentNode.getChildren();
 
      			for (TreeNode child : children) {
@@ -824,32 +848,32 @@ public class Main implements Runnable{
              }
              else if (currentNode.getName().equals("Sequence")) {
      			List<TreeNode> children = currentNode.getChildren();
-     			
+
      			// add left and right child's output set to current node's output set
      			for (TreeNode child : children) {
-    				currentNode.getOutputSet().addAll(child.getOutputSet()); 
+    				currentNode.getOutputSet().addAll(child.getOutputSet());
      			}
              }
         }
-        
+
 	}
 
 
 	/**
 	 * Helper Method to check whether the tree was correctly converted from a graph.
-	 * 
+	 *
 	 * @param root
 	 */
 	private static void printTree(TreeNode root) {
         List<TreeNode> toVisit = new ArrayList<TreeNode>();
 
 		toVisit.add(root);
-		
+
         while (!(toVisit.isEmpty())) {
             // while we still have nodes to visit
             TreeNode currentNode = toVisit.get(0);
             toVisit.remove(0);
-		
+
 			System.out.println("================="+currentNode.getName()+"============");
 			List<TreeNode> children = currentNode.getChildren();
 			if (currentNode.getParent() != null) {
@@ -859,7 +883,7 @@ public class Main implements Runnable{
 			for (String i : currentNode.getInputSet()) {
 				System.out.println("Input Node: "+i);
 			}
-			
+
 			for (String i : currentNode.getOutputSet()) {
 				System.out.println("Output Node: "+i);
 			}
@@ -868,7 +892,7 @@ public class Main implements Runnable{
 				System.out.println("Child Node: "+child.getName());
 				toVisit.add(child);
 			}
-            
+
 /*       for (TreeNode n : tree) {
 			System.out.println("================="+n.getName()+"============");
 			List<TreeNode> children = n.getChildren();
@@ -888,7 +912,7 @@ public class Main implements Runnable{
 	 * @param nodeToTreeNodeMap
 	 * @return
 	 */
-	private static Node findCorrespondingNode(TreeNode n, Map<Node, TreeNode> map) {	
+	private static Node findCorrespondingNode(TreeNode n, Map<Node, TreeNode> map) {
 	    for (Entry<Node, TreeNode> e : map.entrySet()) {
 	        if (e.getValue().getName().equals(n.getName())) {
 	            return e.getKey();
@@ -906,7 +930,7 @@ public class Main implements Runnable{
 					array = increaseArray(array);
 					array[array.length-1] = s;
 				}
-			}	
+			}
 			return array;
 	}
 
@@ -948,10 +972,10 @@ public class Main implements Runnable{
 			System.out.println();
 		} catch (Exception e) {
 			System.out.println(e);
-			System.out.println("print populations error.."); 
+			System.out.println("print populations error..");
 		} finally {
 			tx.close();
-		}			
+		}
 	}
 
 
@@ -974,7 +998,7 @@ public class Main implements Runnable{
 		}
 
 		Transaction transaction = subGraphDatabaseService.beginTx();
-		try{			
+		try{
 			System.out.println("candidates: ");
 			int i = 0;
 			for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry : candidates.entrySet()){
@@ -1001,10 +1025,10 @@ public class Main implements Runnable{
 
 		} catch (Exception e) {
 			System.out.println(e);
-			System.out.println("print populations error.."); 
+			System.out.println("print populations error..");
 		} finally {
 			transaction.close();
-		}	
+		}
 		// return findCompositions.getResult(candidates); //::TODO this returns the best candidate but maybe I just want all the candidates to perform GP on
 		return candidates;
 	}
@@ -1015,7 +1039,7 @@ public class Main implements Runnable{
 		reduceGraphDb.setStartNode(startNode);
 		reduceGraphDb.setEndNode(endNode);
 		reduceGraphDb.setNeo4jServNodes(neo4jServNodes);
-		reduceGraphDb.setTaxonomyMap(taxonomyMap);		
+		reduceGraphDb.setTaxonomyMap(taxonomyMap);
 		reduceGraphDb.setServiceMap(serviceMap);
 
 		Set<Node> relatedNodes = new HashSet<Node>();;
@@ -1038,7 +1062,7 @@ public class Main implements Runnable{
 		relatedNodes = reduceGraphDb.getRelatedNodes();
 		startNode = reduceGraphDb.getStartNode();
 		endNode = reduceGraphDb.getEndNode();
-		subGraphDatabaseService = reduceGraphDb.getSubGraphDatabaseService();		
+		subGraphDatabaseService = reduceGraphDb.getSubGraphDatabaseService();
 		subGraphNodesMap = reduceGraphDb.getSubGraphNodesMap();
 	}
 	private static boolean isNodeFulfilled(Node node, Set<Node> nodes, GraphDatabaseService graphDatabaseService) {
@@ -1062,7 +1086,7 @@ public class Main implements Runnable{
 			transaction.close();
 			return false;
 		}else{
-			transaction.close();			
+			transaction.close();
 			return true;
 		}
 
@@ -1099,7 +1123,7 @@ public class Main implements Runnable{
 		startNode = runtask.getStartNode();
 		endNode = runtask.getEndNode();
 		runtask.createRel(startNode);
-		runtask.createRel(endNode);		
+		runtask.createRel(endNode);
 	}
 
 
@@ -1128,10 +1152,10 @@ public class Main implements Runnable{
 			transaction.success();
 		} catch (Exception e) {
 			System.out.println(e);
-			System.out.println("Main set index and services error.."); 
+			System.out.println("Main set index and services error..");
 		} finally {
 			transaction.close();
-		}			
+		}
 	}
 
 
@@ -1171,10 +1195,10 @@ public class Main implements Runnable{
 
 		} catch (Exception e) {
 			System.out.println(e);
-			System.out.println("Main removeRedundantRel"); 
+			System.out.println("Main removeRedundantRel");
 		} finally {
 			transaction.close();
-		}			
+		}
 		for(Relationship r: toRemove){
 			Transaction t = graphDatabaseService.beginTx();
 			System.out.println("remove: "+r.getId());
@@ -1224,11 +1248,11 @@ public class Main implements Runnable{
 		return false;
 
 	}
-	public static boolean equalLists(Set<String> one, Set<String> two){     
+	public static boolean equalLists(Set<String> one, Set<String> two){
 
-		List<String>one1 = new ArrayList<String>(one); 
-		List<String>two2 = new ArrayList<String>(two);  
-		List<String>one11 = new ArrayList<String>(one); 
+		List<String>one1 = new ArrayList<String>(one);
+		List<String>two2 = new ArrayList<String>(two);
+		List<String>one11 = new ArrayList<String>(one);
 		List<String>two22 = new ArrayList<String>(two);
 		one1.retainAll(two2);
 		two22.retainAll(one11);
@@ -1248,7 +1272,7 @@ public class Main implements Runnable{
 		services = index.forNodes( "identifiers" );
 		transaction.success();
 		transaction.close();
-		signNodesToField(neo4jServNodes, graphDatabaseService);		
+		signNodesToField(neo4jServNodes, graphDatabaseService);
 	}
 
 
@@ -1256,7 +1280,7 @@ public class Main implements Runnable{
 		PopulateTaxonomyTree populateTaxonomyTree = new PopulateTaxonomyTree();
 		populateTaxonomyTree.setTaxonomyMap(taxonomyMap);
 		populateTaxonomyTree.setServiceMap(serviceMap);
-		populateTaxonomyTree.populateTaxonomyTree();		
+		populateTaxonomyTree.populateTaxonomyTree();
 		//		TaxonomyNode t = taxonomyMap.get("inst958190119");
 		//		System.out.println("==========================================");
 		//		System.out.println(t);
@@ -1274,7 +1298,7 @@ public class Main implements Runnable{
 		serviceMap = loadFiles.getServiceMap();
 		//		neo4jwsc.taskInputs = loadFiles.getTaskInputs();
 		loadFiles.getTaskOutputs();
-		serviceNodes = loadFiles.getServiceNodes();		
+		serviceNodes = loadFiles.getServiceNodes();
 	}
 
 
@@ -1294,35 +1318,35 @@ public class Main implements Runnable{
 		transaction.close();
 	}
 	public void run() {
-		while (running) {  
-			System.out.println(new Date() + " ### Neo4jService working.....！");  
-			try {  
-				Thread.sleep(20000);  
-			} catch (InterruptedException e) {  
-				System.out.println(e);  
-			}  
-		}  
+		while (running) {
+			System.out.println(new Date() + " ### Neo4jService working.....！");
+			try {
+				Thread.sleep(20000);
+			} catch (InterruptedException e) {
+				System.out.println(e);
+			}
+		}
 
 	}
-	public void setRunning(boolean running) {  
-		this.running = running;  
+	public void setRunning(boolean running) {
+		this.running = running;
 	}
 
 	private static void registerShutdownHook(GraphDatabaseService graphDatabaseService,String database ) {
-		// Registers a shutdown hook for the Neo4j instance so that it  
-		// shuts down nicely when the VM exits (even if you "Ctrl-C" the  
+		// Registers a shutdown hook for the Neo4j instance so that it
+		// shuts down nicely when the VM exits (even if you "Ctrl-C" the
 		// running example before it's completed)
 		Runtime.getRuntime()
-		.addShutdownHook( new Thread()  
-		{  
-			@Override  
-			public void run()  
-			{  
-				System.out.println("neo4j graph database shutdown hook ("+database+")... ");  
+		.addShutdownHook( new Thread()
+		{
+			@Override
+			public void run()
+			{
+				System.out.println("neo4j graph database shutdown hook ("+database+")... ");
 				graphDatabaseService.shutdown();
-			}  
-		} );  
-	}  
+			}
+		} );
+	}
 	private static String[] getNodeRelationshipPropertyArray(Relationship relationship, String property){
 		Object obj =relationship.getProperty(property);
 		//    		//remove the "[" and "]" from string
@@ -1370,7 +1394,7 @@ public class Main implements Runnable{
 
 		return newArray;
 	}
-	
+
 	// list of nodes in comp -> (normalize/non-normal -> (A/R/C/T -> Value))
 	private static void printCandidates(Map<List<Node>, Map<String, Map<String, Double>>> resultWithQos) throws InterruptedException {
 		int count = 0;
@@ -1380,22 +1404,22 @@ public class Main implements Runnable{
 				//System.out.println(entry2.getKey());
 				for (Map.Entry<String, Double> entry3 : entry2.getValue().entrySet()) {
 					System.out.println(entry3.getKey()+"  >>>>>>>>>>>>>>>>>>>   "+ entry3.getValue());
-					
+
 				}
 
 
 			}
 
-			
-			
+
+
 			count++;
 		}
-			
+
 		System.out.println(count);
 
 		TimeUnit.MINUTES.sleep(50);
 
 	}
-	
-	
+
+
 }
