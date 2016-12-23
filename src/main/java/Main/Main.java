@@ -91,9 +91,19 @@ public class Main implements Runnable{
 
 	//******************************************************//
 
+	public static TreeNode rootNode;
 
-	public static void main( String[] args ) throws IOException, OuchException{
+
+	public static void main( String[] args ) throws IOException, OuchException {
+		setupDatabase();
+	}
+
+
+    private static TreeNode setupDatabase() throws IOException, OuchException {
 		Main neo4jwsc = new Main();
+
+
+
 		//		Thread t = new Thread(neo4jwsc,"Neo4jThread");
 		//		t.start();
 		databaseName = "wsc"+year+"dataset"+dataSet;
@@ -104,9 +114,9 @@ public class Main implements Runnable{
 				taxonomyFileName = "dataset/wsc"+year+"/Set"+dataSet+"MetaData/taxonomy.xml";
 				taskFileName = "dataset/wsc"+year+"/Set"+dataSet+"MetaData/problem.xml";
 			}else{
-				serviceFileName = "dataset/dataset/Set"+dataSet+"MetaData/services-output.xml";
-				taxonomyFileName = "dataset/dataset/Set"+dataSet+"MetaData/taxonomy.xml";
-				taskFileName = "dataset/dataset/Set"+dataSet+"MetaData/problem.xml";
+				serviceFileName = "dataset/Dataset/Set"+dataSet+"MetaData/services-output.xml";
+				taxonomyFileName = "dataset/Dataset/Set"+dataSet+"MetaData/taxonomy.xml";
+				taskFileName = "dataset/Dataset/Set"+dataSet+"MetaData/problem.xml";
 			}
 		}else{
 			serviceFileName = "dataset/test/test_serv.xml";
@@ -236,11 +246,11 @@ public class Main implements Runnable{
 
 			for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry : resultWithQos.entrySet()) {
 				newDBCounter++;
-/*				try { ::TODO maybe enable this later?
+				try { //::TODO maybe enable this later? NOTE: i've enabled it for now - used to be disabled
 					FileUtils.deleteRecursively(new File(newResultDBPath));
 				} catch (IOException e) {
 					e.printStackTrace();
-				}*/
+				}
 				//				generateDB(entry.getKey(),newResultDBPath,"result db", null);
 				GenerateDatabase generateDatabase2 = new GenerateDatabase(entry.getKey(), subGraphDatabaseService, newResultDBPath+newDBCounter);
 				generateDatabase2.createDbService();
@@ -257,8 +267,8 @@ public class Main implements Runnable{
 
 				// find out how to access this new non-redundant database
 				Map<Integer, List<Node>> nodeLayers = buildLayers(generateDatabase2, newGraphDatabaseService, entry.getKey());
-				//test(generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
-				graphToTree(nodeLayers, generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
+				//graphToTreeOld(generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
+				rootNode = graphToTree(nodeLayers, generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
 
 				registerShutdownHook(subGraphDatabaseService,"Reduced");
 				registerShutdownHook(newGraphDatabaseService, "Result");
@@ -402,10 +412,11 @@ public class Main implements Runnable{
 		}
 		fw.close();
 		neo4jwsc.setRunning(false);
+		return rootNode;
 	}
 
 
-    private static void graphToTree(Map<Integer, List<Node>> nodeLayers, GenerateDatabase generateDatabase, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes, String dbPath) {
+	private static TreeNode graphToTree(Map<Integer, List<Node>> nodeLayers, GenerateDatabase generateDatabase, GraphDatabaseService newGraphDatabaseService, List<Node> graphNodes, String dbPath) {
 		Transaction transaction = newGraphDatabaseService.beginTx();
         List<TreeNode> tree = new ArrayList<TreeNode>();
 
@@ -498,12 +509,14 @@ public class Main implements Runnable{
 
 	       transaction.success();
 	       updateTreeInputOutput(tree.get(0));
-	       printTree(tree.get(0));
+	       //printTree(tree.get(0));
 	    } catch (Exception e) {
 	        transaction.failure();
 	    } finally {
 	        transaction.close();
 	    }
+
+    	return tree.get(0);
 	}
 
 
@@ -1029,8 +1042,9 @@ public class Main implements Runnable{
 		} finally {
 			transaction.close();
 		}
-		// return findCompositions.getResult(candidates); //::TODO this returns the best candidate but maybe I just want all the candidates to perform GP on
-		return candidates;
+		 return findCompositions.getResult(candidates); //::TODO this returns the best candidate but maybe I just want all the candidates to perform GP on
+		// TODO: maybe I should only return 1 (i.e. the above)? but then is that a good thing? maybe takes more time to find best, maybe I just want to return a random one?
+		//return candidates;
 	}
 
 
@@ -1317,6 +1331,7 @@ public class Main implements Runnable{
 		transaction.success();
 		transaction.close();
 	}
+
 	public void run() {
 		while (running) {
 			System.out.println(new Date() + " ### Neo4jService working.....！");
@@ -1328,6 +1343,7 @@ public class Main implements Runnable{
 		}
 
 	}
+
 	public void setRunning(boolean running) {
 		this.running = running;
 	}
