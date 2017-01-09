@@ -27,6 +27,11 @@ public class TreeNode extends GPNode {
 
 	// 	public TreeNode(String name, TreeNode parent, List<TreeNode> children, List<String> inputs) old constructor
 
+	// nullary constructor
+	public TreeNode() { 
+		//children = new GPNode[0];
+	}
+	
 	public TreeNode(String name, TreeNode parent) {
 		this.name = name;
 		this.parent = parent;
@@ -36,7 +41,8 @@ public class TreeNode extends GPNode {
 	@Override
 	public void eval(EvolutionState state, int thread, GPData input, ADFStack stack, GPIndividual individual, Problem problem) {
 		WSCData rd = ((WSCData) (input));
-
+		Set<TreeNode> seenServices = new HashSet<TreeNode>();
+		
 		if (name.equals("Sequence")) { // sequence node
 			for (TreeNode n : ch) {
 				if (n.getName().equals("Sequence")) { // place sequence nodes in the right child and others (parallel/service nodes) as left
@@ -51,25 +57,30 @@ public class TreeNode extends GPNode {
 			rd.outputSet = outputSet;
 
 			children[0].eval(state, thread, input, stack, individual, problem);
+			seenServices = rd.seenServices;
 			Set<String> in = rd.inputSet; // I think this only works if child[0] is the left child/the child that isn't the sequence (could be right depending on representation)
 
 			children[1].eval(state, thread, input, stack, individual, problem);
+			rd.seenServices.addAll(seenServices);
 
 			rd.inputSet = in;
 		}
 		else if (name.equals("Parallel")) { //parallel node
 			for (GPNode child : children) {
 				child.eval(state, thread, input, stack, individual, problem);
+				seenServices.addAll(rd.seenServices);
 			}
 		}
 		else { // service node
 			rd.inputSet = inputSet;
 			rd.outputSet = outputSet;
+			rd.seenServices.add(this);
 		}
 
 		// store the input and output information in this node? ::TODO Do I need this?
 		inputSet = rd.inputSet;
 		outputSet = rd.outputSet;
+		rd.seenServices = seenServices;
 	}
 
 	@Override

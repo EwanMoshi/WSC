@@ -1,0 +1,60 @@
+parent.0                                       = koza.params
+
+seed.0                                         = 1
+
+fitness-weight1                                = 0.2
+fitness-weight2                                = 0.3
+fitness-weight3                                = 0.2
+fitness-weight4                                = 0.3
+
+# We have one function set, of class GPFunctionSet
+gp.fs.size                                     = 1
+gp.fs.0                                        = ec.gp.GPFunctionSet
+
+# We'll call the function set "f0".
+gp.fs.0.name                                   = f0
+
+# We have one function in the function set
+gp.fs.0.size                                   = 1
+gp.fs.0.func.0                                 = TreeRepresentation.TreeNode
+gp.fs.0.func.0.nc                              = nc2
+
+eval.problem                                   = ECJ.WSCProblem
+init                                           = ECJ.WSCInitializer
+eval.problem.data                              = ECJ.WSCData
+
+stat.file		                               = $out.stat
+stat.do-time                                   = true
+stat.do-final                                  = true
+
+generations                                    = 5
+
+pop.subpops		                               = 1
+pop.subpop.0.size 	                           = 5
+pop.subpop.0.duplicate-retries 	               = 0
+pop.subpop.0.species                           = ECJ.WSCSpecies
+pop.subpop.0.species.ind                       = ECJ.WSCIndividual
+pop.subpop.0.species.fitness                   = ec.simple.SimpleFitness
+
+# Use simple fitness, and do not quit run early
+pop.subpop.0.species.fitness.maximize          = true
+quit-on-run-complete                           = false
+checkpoint		                               = false
+
+pop.subpop.0.species.pipe                      = ec.breed.MultiBreedingPipeline
+pop.subpop.0.species.pipe.num-sources          = 3
+pop.subpop.0.species.pipe.source.0             = wsc.WSCCrossoverPipeline
+pop.subpop.0.species.pipe.source.0.prob        = 0.1
+pop.subpop.0.species.pipe.source.0.num-sources = 2
+pop.subpop.0.species.pipe.source.1             = ECJ.WSCMutationPipeline
+pop.subpop.0.species.pipe.source.1.prob        = 0.0
+pop.subpop.0.species.pipe.source.1.num-sources = 1
+pop.subpop.0.species.pipe.source.2             = ec.breed.ReproductionPipeline
+pop.subpop.0.species.pipe.source.2.prob        = 0.0
+pop.subpop.0.species.pipe.source.2.num-sources = 1
+pop.subpop.0.species.pipe.source.0.source.0	   = ec.select.TournamentSelection
+pop.subpop.0.species.pipe.source.0.source.1	   = ec.select.TournamentSelection
+pop.subpop.0.species.pipe.source.1.source.0	   = ec.select.TournamentSelection
+pop.subpop.0.species.pipe.source.2.source.0	   = ec.select.TournamentSelection
+breed.elite.0                                  = 0
+select.tournament.size                         = 2

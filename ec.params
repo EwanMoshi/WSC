@@ -60,11 +60,14 @@
 #
 # Here are a few default values for administration stuff -- you can
 # find some basic evolution parameters in simple/params
-
+ 
 
 
 # ec.Evolve
 # ==============================
+
+# This parameter has been deprecated
+# verbosity = 				0
 
 # one thread
 evalthreads = 				1
@@ -85,7 +88,7 @@ seed.0 =				time
 # generation, and the prefix to all the files would be "ec.*"
 checkpoint =				false
 checkpoint-modulo =                     1
-checkpoint-prefix = 			ec
+prefix = 				ec
 
 
 

@@ -24,8 +24,13 @@ public class WSCInitializer extends GPInitializer {
 	public double w3;
 	public double w4;
 
+	public GraphRandom random;
+	
 	@Override
 	public void setup(EvolutionState state, Parameter base) {
+		random = new GraphRandom(state.random[0]);
 		super.setup(state, base);
+		
+		
 	}
 }
