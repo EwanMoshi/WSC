@@ -1,0 +1,78 @@
+
+Generation: 0
+Best Individual:
+Subpopulation 0:
+Evaluated: true
+Fitness: -0.0
+Tree 0:
+ (749987968 [label="Sequence"]; 749987968 -> 2062485976 [dir=back]; 2062485976 [label="end"]; 749987968 -> 855104652 [dir=back]; 855104652 [label="Sequence"]; 855104652 -> 800048623 [dir=back]; 800048623 [label="Parallel"]; 800048623 -> 485216114 [dir=back]; 485216114 [label="serv1531463259"]; 800048623 -> 516465918 [dir=back]; 516465918 [label="serv699915007"]; 855104652 -> 316086295 [dir=back]; 316086295 [label="Sequence"]; 316086295 -> 1132869407 [dir=back]; 1132869407 [label="Parallel"]; 1132869407 -> 22343746 [dir=back]; 22343746 [label="serv1392598793"]; 1132869407 -> 1516260290 [dir=back]; 1516260290 [label="serv76663416"]; 1132869407 -> 1885202233 [dir=back]; 1885202233 [label="serv630482774"]; 316086295 -> 34670818 [dir=back]; 34670818 [label="Sequence"]; 34670818 -> 610348546 [dir=back]; 610348546 [label="Parallel"]; 610348546 -> 2089242391 [dir=back]; 2089242391 [label="serv1462031026"]; 610348546 -> 1677466513 [dir=back]; 1677466513 [label="serv1253734327"]; 610348546 -> 1772112148 [dir=back]; 1772112148 [label="serv7231183"]; 610348546 -> 1151105820 [dir=back]; 1151105820 [label="serv2015850384"]; 610348546 -> 44395375 [dir=back]; 44395375 [label="serv1323166560"]; 34670818 -> 25614393 [dir=back]; 25614393 [label="start"]; 
+     2062485976 [label="end"];  (855104652 [label="Sequence"]; 855104652 -> 800048623 [dir=back]; 800048623 [label="Parallel"]; 800048623 -> 485216114 [dir=back]; 485216114 [label="serv1531463259"]; 800048623 -> 516465918 [dir=back]; 516465918 [label="serv699915007"]; 855104652 -> 316086295 [dir=back]; 316086295 [label="Sequence"]; 316086295 -> 1132869407 [dir=back]; 1132869407 [label="Parallel"]; 1132869407 -> 22343746 [dir=back]; 22343746 [label="serv1392598793"]; 1132869407 -> 1516260290 [dir=back]; 1516260290 [label="serv76663416"]; 1132869407 -> 1885202233 [dir=back]; 1885202233 [label="serv630482774"]; 316086295 -> 34670818 [dir=back]; 34670818 [label="Sequence"]; 34670818 -> 610348546 [dir=back]; 610348546 [label="Parallel"]; 610348546 -> 2089242391 [dir=back]; 2089242391 [label="serv1462031026"]; 610348546 -> 1677466513 [dir=back]; 1677466513 [label="serv1253734327"]; 610348546 -> 1772112148 [dir=back]; 1772112148 [label="serv7231183"]; 610348546 -> 1151105820 [dir=back]; 1151105820 [label="serv2015850384"]; 610348546 -> 44395375 [dir=back]; 44395375 [label="serv1323166560"]; 34670818 -> 25614393 [dir=back]; 25614393 [label="start"]; 
+     (800048623 [label="Parallel"]; 800048623 -> 485216114 [dir=back]; 485216114 [label="serv1531463259"]; 800048623 -> 516465918 [dir=back]; 516465918 [label="serv699915007"]; 
+         485216114 [label="serv1531463259"];  516465918 [label="serv699915007"]; )
+     (316086295 [label="Sequence"]; 316086295 -> 1132869407 [dir=back]; 1132869407 [label="Parallel"]; 1132869407 -> 22343746 [dir=back]; 22343746 [label="serv1392598793"]; 1132869407 -> 1516260290 [dir=back]; 1516260290 [label="serv76663416"]; 1132869407 -> 1885202233 [dir=back]; 1885202233 [label="serv630482774"]; 316086295 -> 34670818 [dir=back]; 34670818 [label="Sequence"]; 34670818 -> 610348546 [dir=back]; 610348546 [label="Parallel"]; 610348546 -> 2089242391 [dir=back]; 2089242391 [label="serv1462031026"]; 610348546 -> 1677466513 [dir=back]; 1677466513 [label="serv1253734327"]; 610348546 -> 1772112148 [dir=back]; 1772112148 [label="serv7231183"]; 610348546 -> 1151105820 [dir=back]; 1151105820 [label="serv2015850384"]; 610348546 -> 44395375 [dir=back]; 44395375 [label="serv1323166560"]; 34670818 -> 25614393 [dir=back]; 25614393 [label="start"]; 
+         (1132869407 [label="Parallel"]; 1132869407 -> 22343746 [dir=back]; 22343746 [label="serv1392598793"]; 1132869407 -> 1516260290 [dir=back]; 1516260290 [label="serv76663416"]; 1132869407 -> 1885202233 [dir=back]; 1885202233 [label="serv630482774"]; 
+             22343746 [label="serv1392598793"];  1516260290 [label="serv76663416"]; 
+             1885202233 [label="serv630482774"]; ) (34670818 [label="Sequence"]; 34670818 -> 610348546 [dir=back]; 610348546 [label="Parallel"]; 610348546 -> 2089242391 [dir=back]; 2089242391 [label="serv1462031026"]; 610348546 -> 1677466513 [dir=back]; 1677466513 [label="serv1253734327"]; 610348546 -> 1772112148 [dir=back]; 1772112148 [label="serv7231183"]; 610348546 -> 1151105820 [dir=back]; 1151105820 [label="serv2015850384"]; 610348546 -> 44395375 [dir=back]; 44395375 [label="serv1323166560"]; 34670818 -> 25614393 [dir=back]; 25614393 [label="start"]; 
+         (610348546 [label="Parallel"]; 610348546 -> 2089242391 [dir=back]; 2089242391 [label="serv1462031026"]; 610348546 -> 1677466513 [dir=back]; 1677466513 [label="serv1253734327"]; 610348546 -> 1772112148 [dir=back]; 1772112148 [label="serv7231183"]; 610348546 -> 1151105820 [dir=back]; 1151105820 [label="serv2015850384"]; 610348546 -> 44395375 [dir=back]; 44395375 [label="serv1323166560"]; 
+             2089242391 [label="serv1462031026"];  1677466513 [label="serv1253734327"]; 
+             1772112148 [label="serv7231183"];  1151105820 [label="serv2015850384"]; 
+             44395375 [label="serv1323166560"]; ) 25614393 [label="start"]; ))))
+
+Generation: 1
+Best Individual:
+Subpopulation 0:
+Evaluated: true
+Fitness: -0.0
+Tree 0:
+ (758456461 [label="Sequence"]; 758456461 -> 605071756 [dir=back]; 605071756 [label="end"]; 758456461 -> 1115473767 [dir=back]; 1115473767 [label="Sequence"]; 1115473767 -> 1135447621 [dir=back]; 1135447621 [label="Parallel"]; 1115473767 -> 282122812 [dir=back]; 282122812 [label="Sequence"]; 282122812 -> 350597603 [dir=back]; 350597603 [label="Parallel"]; 282122812 -> 805706727 [dir=back]; 805706727 [label="Sequence"]; 805706727 -> 527852548 [dir=back]; 527852548 [label="Parallel"]; 805706727 -> 671153797 [dir=back]; 671153797 [label="start"]; 
+     605071756 [label="end"];  (1115473767 [label="Sequence"]; 1115473767 -> 1135447621 [dir=back]; 1135447621 [label="Parallel"]; 1115473767 -> 282122812 [dir=back]; 282122812 [label="Sequence"]; 282122812 -> 350597603 [dir=back]; 350597603 [label="Parallel"]; 282122812 -> 805706727 [dir=back]; 805706727 [label="Sequence"]; 805706727 -> 527852548 [dir=back]; 527852548 [label="Parallel"]; 805706727 -> 671153797 [dir=back]; 671153797 [label="start"]; 
+     1135447621 [label="Parallel"];  (282122812 [label="Sequence"]; 282122812 -> 350597603 [dir=back]; 350597603 [label="Parallel"]; 282122812 -> 805706727 [dir=back]; 805706727 [label="Sequence"]; 805706727 -> 527852548 [dir=back]; 527852548 [label="Parallel"]; 805706727 -> 671153797 [dir=back]; 671153797 [label="start"]; 
+     350597603 [label="Parallel"];  (805706727 [label="Sequence"]; 805706727 -> 527852548 [dir=back]; 527852548 [label="Parallel"]; 805706727 -> 671153797 [dir=back]; 671153797 [label="start"]; 
+     527852548 [label="Parallel"];  671153797 [label="start"]; ))))
+
+Generation: 2
+Best Individual:
+Subpopulation 0:
+Evaluated: true
+Fitness: -0.0
+Tree 0:
+ (1398908181 [label="Sequence"]; 1398908181 -> 157371628 [dir=back]; 157371628 [label="end"]; 1398908181 -> 645068077 [dir=back]; 645068077 [label="Sequence"]; 645068077 -> 986160688 [dir=back]; 986160688 [label="Parallel"]; 645068077 -> 1856246124 [dir=back]; 1856246124 [label="Sequence"]; 1856246124 -> 817060000 [dir=back]; 817060000 [label="Parallel"]; 1856246124 -> 22616070 [dir=back]; 22616070 [label="Sequence"]; 22616070 -> 124334083 [dir=back]; 124334083 [label="Parallel"]; 22616070 -> 817012362 [dir=back]; 817012362 [label="start"]; 
+     157371628 [label="end"];  (645068077 [label="Sequence"]; 645068077 -> 986160688 [dir=back]; 986160688 [label="Parallel"]; 645068077 -> 1856246124 [dir=back]; 1856246124 [label="Sequence"]; 1856246124 -> 817060000 [dir=back]; 817060000 [label="Parallel"]; 1856246124 -> 22616070 [dir=back]; 22616070 [label="Sequence"]; 22616070 -> 124334083 [dir=back]; 124334083 [label="Parallel"]; 22616070 -> 817012362 [dir=back]; 817012362 [label="start"]; 
+     986160688 [label="Parallel"];  (1856246124 [label="Sequence"]; 1856246124 -> 817060000 [dir=back]; 817060000 [label="Parallel"]; 1856246124 -> 22616070 [dir=back]; 22616070 [label="Sequence"]; 22616070 -> 124334083 [dir=back]; 124334083 [label="Parallel"]; 22616070 -> 817012362 [dir=back]; 817012362 [label="start"]; 
+     817060000 [label="Parallel"];  (22616070 [label="Sequence"]; 22616070 -> 124334083 [dir=back]; 124334083 [label="Parallel"]; 22616070 -> 817012362 [dir=back]; 817012362 [label="start"]; 
+     124334083 [label="Parallel"];  817012362 [label="start"]; ))))
+
+Generation: 3
+Best Individual:
+Subpopulation 0:
+Evaluated: true
+Fitness: -0.0
+Tree 0:
+ (1994406807 [label="Sequence"]; 1994406807 -> 1225289459 [dir=back]; 1225289459 [label="end"]; 1994406807 -> 139176259 [dir=back]; 139176259 [label="Sequence"]; 139176259 -> 827942733 [dir=back]; 827942733 [label="Parallel"]; 139176259 -> 606475534 [dir=back]; 606475534 [label="Sequence"]; 606475534 -> 1399701150 [dir=back]; 1399701150 [label="Parallel"]; 606475534 -> 104403969 [dir=back]; 104403969 [label="Sequence"]; 104403969 -> 2082498692 [dir=back]; 2082498692 [label="Parallel"]; 104403969 -> 1674856746 [dir=back]; 1674856746 [label="start"]; 
+     1225289459 [label="end"];  (139176259 [label="Sequence"]; 139176259 -> 827942733 [dir=back]; 827942733 [label="Parallel"]; 139176259 -> 606475534 [dir=back]; 606475534 [label="Sequence"]; 606475534 -> 1399701150 [dir=back]; 1399701150 [label="Parallel"]; 606475534 -> 104403969 [dir=back]; 104403969 [label="Sequence"]; 104403969 -> 2082498692 [dir=back]; 2082498692 [label="Parallel"]; 104403969 -> 1674856746 [dir=back]; 1674856746 [label="start"]; 
+     827942733 [label="Parallel"];  (606475534 [label="Sequence"]; 606475534 -> 1399701150 [dir=back]; 1399701150 [label="Parallel"]; 606475534 -> 104403969 [dir=back]; 104403969 [label="Sequence"]; 104403969 -> 2082498692 [dir=back]; 2082498692 [label="Parallel"]; 104403969 -> 1674856746 [dir=back]; 1674856746 [label="start"]; 
+     1399701150 [label="Parallel"];  (104403969 [label="Sequence"]; 104403969 -> 2082498692 [dir=back]; 2082498692 [label="Parallel"]; 104403969 -> 1674856746 [dir=back]; 1674856746 [label="start"]; 
+     2082498692 [label="Parallel"];  1674856746 [label="start"]; ))))
+
+Generation: 4
+Best Individual:
+Subpopulation 0:
+Evaluated: true
+Fitness: -0.0
+Tree 0:
+ (1322833390 [label="Sequence"]; 1322833390 -> 1748671595 [dir=back]; 1748671595 [label="end"]; 1322833390 -> 897822955 [dir=back]; 897822955 [label="Sequence"]; 897822955 -> 1972167046 [dir=back]; 1972167046 [label="Parallel"]; 897822955 -> 1480913300 [dir=back]; 1480913300 [label="Sequence"]; 1480913300 -> 1346058455 [dir=back]; 1346058455 [label="Parallel"]; 1480913300 -> 2023214803 [dir=back]; 2023214803 [label="Sequence"]; 2023214803 -> 1787138198 [dir=back]; 1787138198 [label="Parallel"]; 2023214803 -> 1444759228 [dir=back]; 1444759228 [label="start"]; 
+     1748671595 [label="end"];  (897822955 [label="Sequence"]; 897822955 -> 1972167046 [dir=back]; 1972167046 [label="Parallel"]; 897822955 -> 1480913300 [dir=back]; 1480913300 [label="Sequence"]; 1480913300 -> 1346058455 [dir=back]; 1346058455 [label="Parallel"]; 1480913300 -> 2023214803 [dir=back]; 2023214803 [label="Sequence"]; 2023214803 -> 1787138198 [dir=back]; 1787138198 [label="Parallel"]; 2023214803 -> 1444759228 [dir=back]; 1444759228 [label="start"]; 
+     1972167046 [label="Parallel"];  (1480913300 [label="Sequence"]; 1480913300 -> 1346058455 [dir=back]; 1346058455 [label="Parallel"]; 1480913300 -> 2023214803 [dir=back]; 2023214803 [label="Sequence"]; 2023214803 -> 1787138198 [dir=back]; 1787138198 [label="Parallel"]; 2023214803 -> 1444759228 [dir=back]; 1444759228 [label="start"]; 
+     1346058455 [label="Parallel"];  (2023214803 [label="Sequence"]; 2023214803 -> 1787138198 [dir=back]; 1787138198 [label="Parallel"]; 2023214803 -> 1444759228 [dir=back]; 1444759228 [label="start"]; 
+     1787138198 [label="Parallel"];  1444759228 [label="start"]; ))))
+
+Best Individual of Run:
+Subpopulation 0:
+Evaluated: false
+Fitness: -0.0
+Tree 0:
+ (363992067 [label="Sequence"]; 363992067 -> 474377186 [dir=back]; 474377186 [label="end"]; 363992067 -> 1516363759 [dir=back]; 1516363759 [label="Sequence"]; 1516363759 -> 480699669 [dir=back]; 480699669 [label="Parallel"]; 1516363759 -> 422705294 [dir=back]; 422705294 [label="Sequence"]; 422705294 -> 906463537 [dir=back]; 906463537 [label="Parallel"]; 422705294 -> 1649256121 [dir=back]; 1649256121 [label="Sequence"]; 1649256121 -> 1239968168 [dir=back]; 1239968168 [label="Parallel"]; 1649256121 -> 1594563987 [dir=back]; 1594563987 [label="start"]; 
+     474377186 [label="end"];  (1516363759 [label="Sequence"]; 1516363759 -> 480699669 [dir=back]; 480699669 [label="Parallel"]; 1516363759 -> 422705294 [dir=back]; 422705294 [label="Sequence"]; 422705294 -> 906463537 [dir=back]; 906463537 [label="Parallel"]; 422705294 -> 1649256121 [dir=back]; 1649256121 [label="Sequence"]; 1649256121 -> 1239968168 [dir=back]; 1239968168 [label="Parallel"]; 1649256121 -> 1594563987 [dir=back]; 1594563987 [label="start"]; 
+     480699669 [label="Parallel"];  (422705294 [label="Sequence"]; 422705294 -> 906463537 [dir=back]; 906463537 [label="Parallel"]; 422705294 -> 1649256121 [dir=back]; 1649256121 [label="Sequence"]; 1649256121 -> 1239968168 [dir=back]; 1239968168 [label="Parallel"]; 1649256121 -> 1594563987 [dir=back]; 1594563987 [label="start"]; 
+     906463537 [label="Parallel"];  (1649256121 [label="Sequence"]; 1649256121 -> 1239968168 [dir=back]; 1239968168 [label="Parallel"]; 1649256121 -> 1594563987 [dir=back]; 1594563987 [label="start"]; 
+     1239968168 [label="Parallel"];  1594563987 [label="start"]; ))))

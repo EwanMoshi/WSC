@@ -66,7 +66,7 @@ public class WSCMutationPipeline extends BreedingPipeline {
 			
 			// TODO: this should create a new tree based on input/output of current node
 			Main main = new Main();
-			GPNode newNode = main.rootNode;
+			GPNode newNode = (GPNode) main.rootNode;
 			
 			tree.replaceNode(selectedNode, newNode);
 			tree.evaluated = false;

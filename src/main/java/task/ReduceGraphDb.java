@@ -98,22 +98,28 @@ public class ReduceGraphDb {
 	public double getMaxCost() {
 		return maxCost;
 	}
+	
 	public void setStartNode(Node startNode) {
 		this.startNode = startNode;
 	}
+	
 	public void setEndNode(Node endNode) {
 		this.endNode = endNode;
 	}
+	
 	public Node getStartNode(){
 		return this.startNode;
 	}
+	
 	public Node getEndNode(){
 		return this.endNode;
 	}
+	
 	@SuppressWarnings("static-access")
 	public void setTaxonomyMap(Map<String, TaxonomyNode> taxonomyMap){
 		this.taxonomyMap = taxonomyMap;
 	}
+	
 	@SuppressWarnings("static-access")
 	public void setServiceMap(Map<String, ServiceNode> serviceMap){
 		this.serviceMap = serviceMap;
@@ -122,15 +128,19 @@ public class ReduceGraphDb {
 	public Map<String, Node> getSubGraphNodesMap() {
 		return subGraphNodesMap;
 	}
+	
 	public Set<Node> getRelatedNodes(){
 		return relatedNodes;
 	}
+	
 	public GraphDatabaseService getSubGraphDatabaseService(){
 		return this.subGraphDatabaseService;
 	}
+	
 	public void setNeo4jServNodes(Map<String, Node> neo4jServNodes){
 		this.neo4jServNodes = neo4jServNodes;
 	}
+	
 	public void findAllReleatedNodes(Set<Node> releatedNodes, boolean b) {
 		if(!b){
 			for(Entry<String, Node>entry: neo4jServNodes.entrySet()){
@@ -153,26 +163,34 @@ public class ReduceGraphDb {
 	}
 	private boolean hasRel(Node firstNode, Node secondNode, Set<Node> releatedNodes) {
 		Transaction transaction = graphDatabaseService.beginTx();
-		if(releatedNodes==null){
-			PathFinder<Path> finder = GraphAlgoFactory.shortestPath(Traversal.expanderForTypes(RelTypes.IN, Direction.OUTGOING), neo4jServNodes.size());                  
-
-			if(finder.findSinglePath(firstNode, secondNode)!=null){
-				transaction.close();
-				return true;
+		try {
+			if(releatedNodes==null){
+				PathFinder<Path> finder = GraphAlgoFactory.shortestPath(Traversal.expanderForTypes(RelTypes.IN, Direction.OUTGOING), neo4jServNodes.size());                  
+	
+				if(finder.findSinglePath(firstNode, secondNode)!=null){
+					transaction.success();
+					return true;
+				}
+				transaction.success();
+				return false;
 			}
-			transaction.close();
-			return false;
-		}
-		else{
-			PathFinder<Path> finder = GraphAlgoFactory.shortestPath(Traversal.expanderForTypes(RelTypes.IN, Direction.OUTGOING), neo4jServNodes.size());                  
-
-			if(finder.findSinglePath(firstNode, secondNode)!=null){
-				transaction.close();
-				return true;
+			else{
+				PathFinder<Path> finder = GraphAlgoFactory.shortestPath(Traversal.expanderForTypes(RelTypes.IN, Direction.OUTGOING), neo4jServNodes.size());                  
+	
+				if(finder.findSinglePath(firstNode, secondNode)!=null){
+					transaction.success();
+					return true;
+				}
+				transaction.success();
+				return false;
 			}
-			transaction.close();
-			return false;
-		}
+		} catch (Exception e) {
+	        System.err.println(e.getMessage());
+	        System.out.println("graphDatabaseService ERRRRORRRRRRR");
+	    } finally {
+	    	transaction.close();
+	    }
+		return false;
 	}
 
 	private void removeNoneFulFillNodes(Set<Node> releatedNodes) {
@@ -326,6 +344,7 @@ public class ReduceGraphDb {
 			transaction.close();
 		}
 	}
+	
 	private void addInputsServiceRelationship(Node sNode) {
 		Transaction transaction = subGraphDatabaseService.beginTx();
 		//		double sNodeWeight = (double) sNode.getProperty("weight");
@@ -351,26 +370,29 @@ public class ReduceGraphDb {
 					relation.setProperty("Direction", "incoming");    
 				}
 			}
-			transaction.success();			
+			transaction.success();	
+
+			if(sNode.getProperty("name").equals("end")){
+				endNode = sNode;
+			}
+
+			transaction.success();				
+
 		} catch (Exception e) {
 			System.out.println(e);
-			System.out.println("GenerateDatabase addInputsServiceRelationship error.."); 
+			System.out.println("GenerateDatabase error.."); 
 		} finally {
 			transaction.close();
-		}	
-		transaction = subGraphDatabaseService.beginTx();
-		if(sNode.getProperty("name").equals("end")){
-			endNode = sNode;
 		}
-		transaction.close();
 	}
-	public void createNodes(Set<Node>relatedNodes){
+	
+	public void createNodes(Set<Node>relatedNodes, int dbCounter){
 		try {
 			FileUtils.deleteRecursively(new File(Neo4j_subDBPath));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		subGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(Neo4j_subDBPath));
+		subGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(Neo4j_subDBPath+dbCounter));
 		Transaction t = subGraphDatabaseService.beginTx();
 		index = subGraphDatabaseService.index();
 		services = index.forNodes( "identifiers" );

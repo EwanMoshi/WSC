@@ -255,12 +255,19 @@ public class FindCompositions {
 			Set<Node>result = new HashSet<Node>();
 
 			Transaction tt = subGraphDatabaseService.beginTx();
-			for(Node node:subGraphDatabaseService.getAllNodes()){
-				node.setProperty("totalTime", 0.0);
+			try {
+				for(Node node:subGraphDatabaseService.getAllNodes()){
+					node.setProperty("totalTime", 0.0);
+				}	
+				startNode.setProperty("totalTime", 0.0);
+				tt.success();
+			} catch (Exception e) {
+				System.out.println(e);
+				System.out.println("eeeeeeeeeeeeeerror.."); 
+			} finally {
+				tt.close();
 			}	
-			startNode.setProperty("totalTime", 0.0);
-			tt.success();
-			tt.close();
+
 			result.add(endNode);
 			composition(endNode, result);	
 			result = checkDuplicateNodes(result);
@@ -268,23 +275,38 @@ public class FindCompositions {
 				boolean fulfilled = true;
 				for(Node node: result){
 					Transaction tx = subGraphDatabaseService.beginTx();
-					if(!node.getProperty("name").equals("start") &&!node.getProperty("name").equals("end") ){
+					try {
+						if(!node.getProperty("name").equals("start") &&!node.getProperty("name").equals("end") ){
 
-						if(!isAllNodesFulfilled(node,result)){
-							fulfilled = false;
-							break;
+							if(!isAllNodesFulfilled(node,result)){
+								fulfilled = false;
+								break;
+							}
 						}
+					} catch (Exception e) {
+						System.out.println(e);
+						System.out.println("addInputsServiceRelationship error.."); 
+					} finally {
+						tx.close();
 					}
-					tx.close();
+
 
 				}
 				if(fulfilled){
 					boolean findNonRelNode = false;
 					for(Node sNode: result){
-						if(!hasRel(startNode, sNode, result) || !hasRel(sNode, endNode, result)){
-							findNonRelNode =true;
-							relationships.clear();
-							break;
+						Transaction ttt = subGraphDatabaseService.beginTx();
+						try {
+							if(!hasRel(startNode, sNode, result) || !hasRel(sNode, endNode, result)){
+								findNonRelNode =true;
+								relationships.clear();
+								break;
+							}
+						} catch (Exception e) {
+							System.out.println(e);
+							System.out.println("eeeeeeee.."); 
+						} finally {
+							ttt.close();
 						}
 					}
 					if(!findNonRelNode){
@@ -293,31 +315,36 @@ public class FindCompositions {
 						if(result.size()<=individuleNodeSize && result.size()>0){
 							for(Node n: result){
 								Transaction transaction = subGraphDatabaseService.beginTx();
-								if(n.getProperty("name").equals("start")){
-									List<Node> list = new ArrayList<Node>(result);
-									timeForEachCandidate.put(list,(double)n.getProperty("totalTime"));
-									List<Node> list2 = new ArrayList<Node>(result);
-									Transaction tr = subGraphDatabaseService.beginTx();
-									//							Set<Relationship> rs = new HashSet<Relationship>(relationships);
-									List<Map<String,String>>rels = new ArrayList<Map<String,String>>();
-									//							for (Relationship r: rs){
-									//								Map<String,String>relsString = new HashMap<String, String>();
-									//								String from = (String)r.getProperty("From");
-									//								String to = (String)r.getProperty("To");
-									//								if(compositionContains(from,result)&& compositionContains(to,result) && !from.equals(to)){
-									//									relsString.put(from, to);
-									//									rels.add(relsString);
-									//									//System.out.println((String)r.getProperty("From")+"  =>  "+ (String)r.getProperty("To"));
-									//								}
-									//							}
+								try {
+									if(n.getProperty("name").equals("start")){
+										List<Node> list = new ArrayList<Node>(result);
+										timeForEachCandidate.put(list,(double)n.getProperty("totalTime"));
+										List<Node> list2 = new ArrayList<Node>(result);
+										Transaction tr = subGraphDatabaseService.beginTx();
+										//							Set<Relationship> rs = new HashSet<Relationship>(relationships);
+										List<Map<String,String>>rels = new ArrayList<Map<String,String>>();
+										//							for (Relationship r: rs){
+										//								Map<String,String>relsString = new HashMap<String, String>();
+										//								String from = (String)r.getProperty("From");
+										//								String to = (String)r.getProperty("To");
+										//								if(compositionContains(from,result)&& compositionContains(to,result) && !from.equals(to)){
+										//									relsString.put(from, to);
+										//									rels.add(relsString);
+										//									//System.out.println((String)r.getProperty("From")+"  =>  "+ (String)r.getProperty("To"));
+										//								}
+										//							}
 
-									tr.close();
+										tr.close();
 
-									candidatesWithRels.put(list2, rels);
+										candidatesWithRels.put(list2, rels);
+									}
+								} catch (Exception e) {
+									System.out.println(e);
+									System.out.println("GenerateDatabase addInputsServiceRelationship error.."); 
+								} finally {
+									transaction.close();
 								}
-								transaction.close();
 							}
-
 						}
 						else{
 							relationships.clear();
@@ -343,26 +370,34 @@ public class FindCompositions {
 
 	private boolean hasRel(Node firstNode, Node secondNode, Set<Node> releatedNodes) {
 		Transaction transaction = subGraphDatabaseService.beginTx();
-		if(releatedNodes==null){
-			PathFinder<Path> finder = GraphAlgoFactory.shortestPath(Traversal.expanderForTypes(RelTypes.IN, Direction.OUTGOING), neo4jServNodes.size());                  
+		try {
+			if(releatedNodes==null){
+				PathFinder<Path> finder = GraphAlgoFactory.shortestPath(Traversal.expanderForTypes(RelTypes.IN, Direction.OUTGOING), neo4jServNodes.size());                  
 
-			if(finder.findSinglePath(firstNode, secondNode)!=null){
-				transaction.close();
-				return true;
+				if(finder.findSinglePath(firstNode, secondNode)!=null){
+					transaction.success();
+					return true;
+				}
+				transaction.success();
+				return false;
 			}
-			transaction.close();
-			return false;
-		}
-		else{
-			PathFinder<Path> finder = GraphAlgoFactory.shortestPath(Traversal.expanderForTypes(RelTypes.IN, Direction.OUTGOING), neo4jServNodes.size());                  
+			else{
+				PathFinder<Path> finder = GraphAlgoFactory.shortestPath(Traversal.expanderForTypes(RelTypes.IN, Direction.OUTGOING), neo4jServNodes.size());                  
 
-			if(finder.findSinglePath(firstNode, secondNode)!=null){
-				transaction.close();
-				return true;
+				if(finder.findSinglePath(firstNode, secondNode)!=null){
+					transaction.success();
+					return true;
+				}
+				transaction.success();
+				return false;
 			}
+		} catch (Exception e) {
+			System.out.println(e);
+			System.out.println("GenerateDatabase addInputsServiceRelationship error.."); 
+		} finally {
 			transaction.close();
-			return false;
 		}
+		return false;	
 	}
 	private void composition(Node subEndNode, Set<Node> result) {
 
@@ -371,11 +406,16 @@ public class FindCompositions {
 		List<Relationship> rels = new ArrayList<Relationship>();
 
 		Transaction tt = subGraphDatabaseService.beginTx();
-		for(Relationship r: subEndNode.getRelationships(Direction.INCOMING)){
-			rels.add(r);
+		try {
+			for(Relationship r: subEndNode.getRelationships(Direction.INCOMING)){
+				rels.add(r);
+			}
+		} catch (Exception e) {
+			System.out.println(e);
+			System.out.println("GenerateDatabase addInputsServiceRelationship error.."); 
+		} finally {
+			tt.close();
 		}
-		tt.close();
-
 
 
 		Set<Node> fulfillSubEndNodes = findNodesFulfillSubEndNode(nodeInputs,rels);
@@ -595,12 +635,14 @@ public class FindCompositions {
 		}
 		return false;
 	}
+	
 	private String[] getNodePropertyArray(Node sNode, String property){
 		Transaction transaction = subGraphDatabaseService.beginTx();
-		Object obj =sNode.getProperty(property);
-		//    		//remove the "[" and "]" from string
 		String[] array = new String[0];
-		try{
+
+		try {
+			Object obj =sNode.getProperty(property);
+			//    		//remove the "[" and "]" from string
 			String ips = Arrays.toString((String[]) obj).substring(1, Arrays.toString((String[]) obj).length()-1);
 			String[] tempInputs = ips.split("\\s*,\\s*");
 
@@ -610,7 +652,7 @@ public class FindCompositions {
 					array[array.length-1] = s;
 				}
 			}
-		}catch(Exception e){
+		} catch(Exception e){
 
 		}
 		finally{
@@ -618,6 +660,7 @@ public class FindCompositions {
 		}
 		return array;
 	}
+	
 	public GraphDatabaseService getSubGraphDatabaseService() {
 		return subGraphDatabaseService;
 	}

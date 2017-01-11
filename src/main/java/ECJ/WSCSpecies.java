@@ -1,16 +1,24 @@
 package ECJ;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
+import task.OuchException;
 import Main.Main;
 import ec.EvolutionState;
 import ec.Individual;
 import ec.Species;
+import ec.gp.GPNode;
 import ec.util.Parameter;
 
 public class WSCSpecies extends Species {
 
+	private static int treeCounter = 0;
+	
 	@Override
 	public Parameter defaultBase() {
-		return null;
+		return new Parameter("wscspecies");
 	}
 
 	@Override
@@ -26,11 +34,29 @@ public class WSCSpecies extends Species {
 		WSCIndividual tree = null;
 
 		Main main = new Main();
+		
+		try {
+			main.main(null);
+		} catch (IOException | OuchException e) {
+			e.printStackTrace();
+		}
+		
 		if (main.rootNode == null) { // this won't stop this method from returning null but it will tell me what's causing the problem
 			System.out.println("dun goof'd");
 		}
 		else {
-			tree = new WSCIndividual(main.rootNode);
+			tree = new WSCIndividual((GPNode) main.rootNode);
+		}
+		
+		System.out.println("Printing TREE");
+	    try {
+			FileWriter writer2 = new FileWriter(new File("debug-tree"+treeCounter+".dot"));
+			writer2.append(tree.toString());
+			writer2.close();
+			treeCounter++;
+			//System.exit(0);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 
 		return tree;

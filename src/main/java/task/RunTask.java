@@ -112,8 +112,8 @@ public class RunTask {
 
 	}
 	@SuppressWarnings("deprecation")
-	public void createTempDb() {
-		tempGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(Neo4j_tempDBPath));
+	public void createTempDb(int dbCounter) {
+		tempGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(Neo4j_tempDBPath+dbCounter));
 		Transaction transaction = tempGraphDatabaseService.beginTx();
 		try{
 			tempIndex = tempGraphDatabaseService.index();
@@ -131,11 +131,12 @@ public class RunTask {
 			transaction.close();
 		}		
 	}
-	public void copyDb() {
+	
+	public void copyDb(int dbCounter) {
 		File srcDir = new File(path);
-		File destDir = new File(Neo4j_tempDBPath);
+		File destDir = new File(Neo4j_tempDBPath+dbCounter);
 		try {
-			FileUtils.deleteRecursively(new File(Neo4j_tempDBPath));
+			FileUtils.deleteRecursively(new File(Neo4j_tempDBPath+dbCounter));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -146,6 +147,7 @@ public class RunTask {
 		}
 		System.out.println("copying of file from Java program is completed");	
 	}
+	
 	private static void copyFolder(File sourceFolder, File destinationFolder) throws IOException
 	{
 		//Check if sourceFolder is a directory or file

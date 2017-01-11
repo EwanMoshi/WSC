@@ -360,25 +360,7 @@ public class GenerateDatabase {
 		}
 	}
 	
-	private List<TreeNode> transformGraphToTree(Node currentNode, List<String> asList) {
-		
-		TreeNode node;
-		
-		if (getInputOutputServicesForSubGraph(currentNode, graphNodes, "outputServices",oldGraphDatabaseService) == null) {
-
-		}
-		else if (currentNode.getProperty("name").equals("start")) {
-			// if from has one successor
-			if (getInputOutputServicesForSubGraph(currentNode, graphNodes, "outputServices",oldGraphDatabaseService).length == 1) {
-				//node = transformGraphToTree(currentNode.getProperty("outputServices"))
-			}
-		}
-			
-		return null;
-	}
-
-	private Node[] increaseNodeArray(Node[] theArray)
-	{
+	private Node[] increaseNodeArray(Node[] theArray) {
 		int i = theArray.length;
 		int n = ++i;
 		Node[] newArray = new Node[n];

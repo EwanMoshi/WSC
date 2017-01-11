@@ -51,7 +51,7 @@ public class WSCIndividual extends GPIndividual {
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
-		b.append("digarph tree { ");
+		b.append("digraph tree { ");
 		b.append(trees[0].child.toString());
 		b.append("}");
 		return b.toString();
