@@ -42,12 +42,15 @@ public class TerminalTreeNode extends GPNode implements TreeNode {
 	@Override
 	public void eval(EvolutionState state, int thread, GPData input, ADFStack stack, GPIndividual individual, Problem problem) {
 		WSCData rd = ((WSCData) (input));
+		if (rd.seenServices == null) {
+			rd.seenServices = new HashSet<TreeNode>();
+		}
 		rd.seenServices = new HashSet<TreeNode>();
 		
 		rd.inputSet = inputSet;
 		rd.outputSet = outputSet;
 		rd.seenServices.add(this);
-		
+		rd.maxTime += qos[0];
 
 		// store the input and output information in this node? ::TODO Do I need this?
 		inputSet = rd.inputSet;
@@ -143,7 +146,8 @@ public class TerminalTreeNode extends GPNode implements TreeNode {
 	}
 
 	public void setQos(double[] qos) {
-		this.qos = qos;
+		this.qos = qos; // TODO: 12 JAN UPDATE: This is always an array of 0.0, 0.0, 0.0, 0.0
+
 	}
 	
 	@Override
@@ -153,6 +157,7 @@ public class TerminalTreeNode extends GPNode implements TreeNode {
 
 		newNode.inputSet = inputSet;
 		newNode.outputSet = outputSet;
+		newNode.qos = qos;
 		return newNode;
 	}
 }

@@ -759,7 +759,7 @@ public class Evolve
                     state.output.setFilePrefix(jobFilePrefix);     // add a prefix for checkpoint/output files 
                     state.checkpointPrefix = jobFilePrefix + state.checkpointPrefix;  // also set up checkpoint prefix
                     }
-                                    
+                
                 // Here you can set up the EvolutionState's parameters further before it's setup(...).
                 // This includes replacing the random number generators, changing values in state.parameters,
                 // changing instance variables (except for job and runtimeArguments, please), etc.

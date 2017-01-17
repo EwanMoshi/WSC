@@ -20,6 +20,8 @@ public interface TreeNode {
 	
 	public void setQos(double[] qos);
 	
+	public double[] getQos();
+
 	public void addChild(TreeNode n);
 	
 	public void setParent(TreeNode n);

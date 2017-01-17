@@ -479,6 +479,7 @@ public class Main implements Runnable{
 				// create a parallel node with all the nodes in current layer as its children
 	    		else if (nodeLayers.get(i).size() > 1) {
 	    			TreeNode parallel = new ParallelNode("Parallel", sequenceCurrent);
+	    			int childCounter = 0; // counter to retrieve all the children in the List<Node> from NodeLayers map
 	    			for (Node ch : nodeLayers.get(i)) {
 	    				TreeNode child = new TerminalTreeNode(ch.getProperty("name").toString(), parallel);
 
@@ -488,10 +489,10 @@ public class Main implements Runnable{
 		                child.setOutputSet(outputSet);
 
 		                double[] qos = new double[4];
-		                qos[0] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightTime").toString());
-		                qos[1] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightCost").toString());
-		                qos[2] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightAvailibility").toString());
-		                qos[3] = Double.parseDouble(nodeLayers.get(i).get(0).getProperty("weightReliability").toString());
+		                qos[0] = Double.parseDouble(nodeLayers.get(i).get(childCounter).getProperty("weightTime").toString());
+		                qos[1] = Double.parseDouble(nodeLayers.get(i).get(childCounter).getProperty("weightCost").toString());
+		                qos[2] = Double.parseDouble(nodeLayers.get(i).get(childCounter).getProperty("weightAvailibility").toString());
+		                qos[3] = Double.parseDouble(nodeLayers.get(i).get(childCounter).getProperty("weightReliability").toString());
 
 		                child.setQos(qos);
 
@@ -499,6 +500,7 @@ public class Main implements Runnable{
 		                parallel.getOutputSet().addAll(outputSet);
 
 	    				parallel.addChild(child);
+	    				childCounter++;
 	    			}
 	    			sequenceCurrent.addChild(parallel);
 
@@ -526,6 +528,7 @@ public class Main implements Runnable{
 
         Map<Integer, List<Node>> nodeLayers = new HashMap<Integer, List<Node>>();
 
+        // initialize the map and create an empty list for each potential layer
         for (int i = 0; i < graphNodes.size(); i++) {
         	nodeLayers.put(i, new ArrayList<Node>());
         }

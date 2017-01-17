@@ -31,6 +31,15 @@ public class WSCInitializer extends GPInitializer {
 		random = new GraphRandom(state.random[0]);
 		super.setup(state, base);
 		
+		Parameter weight1Param = new Parameter("fitness-weight1");
+		Parameter weight2Param = new Parameter("fitness-weight2");
+		Parameter weight3Param = new Parameter("fitness-weight3");
+		Parameter weight4Param = new Parameter("fitness-weight4");
+
+		w1 = state.parameters.getDouble(weight1Param, null);
+		w2 = state.parameters.getDouble(weight2Param, null);
+		w3 = state.parameters.getDouble(weight3Param, null);
+		w4 = state.parameters.getDouble(weight4Param, null);
 		
 	}
 }

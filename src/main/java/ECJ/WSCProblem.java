@@ -27,6 +27,7 @@ public class WSCProblem extends GPProblem implements SimpleProblemForm {
 			WSCData input = (WSCData) (this.input);
 
 			GPIndividual gpInd = (GPIndividual) ind;
+
 			gpInd.trees[0].child.eval(state, threadnum, input, stack, ((GPIndividual) ind), this);
 			double[] qos = new double[4];
 			qos[WSCInitializer.TIME] = input.maxTime;
@@ -34,9 +35,12 @@ public class WSCProblem extends GPProblem implements SimpleProblemForm {
 			qos[WSCInitializer.RELIABILITY] = 1.0;
 
 			for (TreeNode n : input.seenServices) {
-				qos[WSCInitializer.COST] += n.qos[WSCInitializer.COST];
-				qos[WSCInitializer.AVAILABILITY] *= n.qos[WSCInitializer.AVAILABILITY];
-				qos[WSCInitializer.RELIABILITY] *= n.qos[WSCInitializer.RELIABILITY];
+				if ((n.getName().equals("end")) || (n.getName().equals("start"))) {
+					continue;
+				}
+				qos[WSCInitializer.COST] += n.getQos()[WSCInitializer.COST];
+				qos[WSCInitializer.AVAILABILITY] *= n.getQos()[WSCInitializer.AVAILABILITY];
+				qos[WSCInitializer.RELIABILITY] *= n.getQos()[WSCInitializer.RELIABILITY];
 			}
 
 			double fitness = calculateFitness(qos[WSCInitializer.AVAILABILITY], qos[WSCInitializer.RELIABILITY], qos[WSCInitializer.TIME], qos[WSCInitializer.COST], init);
@@ -45,6 +49,7 @@ public class WSCProblem extends GPProblem implements SimpleProblemForm {
 			f.setFitness(state, fitness, false);
 
 			ind.evaluated = true;
+			
 		}
 	}
 
@@ -55,9 +60,7 @@ public class WSCProblem extends GPProblem implements SimpleProblemForm {
 		c = normaliseCost(c, init);
 
 		double fitness = ((init.w1 * a) + (init.w2 * r) + (init.w3 * t) + (init.w4 * c));
-
 		return fitness;
-
 	}
 
 

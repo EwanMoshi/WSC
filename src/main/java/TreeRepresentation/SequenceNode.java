@@ -60,7 +60,7 @@ public class SequenceNode extends GPNode implements TreeNode {
 		children[0].eval(state, thread, input, stack, individual, problem);
 		seenServices = rd.seenServices;
 		Set<String> in = rd.inputSet; // I think this only works if child[0] is the left child/the child that isn't the sequence (could be right depending on representation)
-
+		
 		children[1].eval(state, thread, input, stack, individual, problem);
 		rd.seenServices.addAll(seenServices);
 
@@ -71,7 +71,7 @@ public class SequenceNode extends GPNode implements TreeNode {
 		// store the input and output information in this node? ::TODO Do I need this?
 		inputSet = rd.inputSet;
 		outputSet = rd.outputSet;
-		rd.seenServices = seenServices;
+		//rd.seenServices = seenServices;
 	}
 
 	@Override
@@ -86,6 +86,7 @@ public class SequenceNode extends GPNode implements TreeNode {
 		newNode.children = newChildren;
 		newNode.inputSet = inputSet;
 		newNode.outputSet = outputSet;
+		newNode.qos = qos;
 		return newNode;
 	}
 
