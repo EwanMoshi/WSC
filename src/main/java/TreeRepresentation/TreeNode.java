@@ -3,6 +3,8 @@ package TreeRepresentation;
 import java.util.List;
 import java.util.Set;
 
+import ec.gp.GPNode;
+
 
 public interface TreeNode {
 	
@@ -29,5 +31,7 @@ public interface TreeNode {
 	public List<TreeNode> getChildren();
 	
 	public TreeNode getParent();
+	
+	public GPNode[] getCh();
 
 }

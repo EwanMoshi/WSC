@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import ECJ.WSCData;
 import ec.EvolutionState;
@@ -25,12 +26,12 @@ public class SequenceNode extends GPNode implements TreeNode {
 
 	private Set<String> inputSet = new HashSet<String>();
 	private Set<String> outputSet = new HashSet<String>();
-
+	
 	// 	public TreeNode(String name, TreeNode parent, List<TreeNode> children, List<String> inputs) old constructor
 
 	// nullary constructor
 	public SequenceNode() {
-		children = new GPNode[0];
+		//children = new GPNode[2];
 	}
 	
 	public SequenceNode(String name, TreeNode parent) {
@@ -79,11 +80,29 @@ public class SequenceNode extends GPNode implements TreeNode {
 		// this should work for all three kinds of nodes (sequence, parallel, and service)
 		SequenceNode newNode = new SequenceNode(name, parent);
 		GPNode[] newChildren = new GPNode[children.length];
+
 		for (int i = 0; i < children.length; i++) {
-			newChildren[i] = (GPNode) children[i].clone();
-			newChildren[i].parent = newNode;
+
+			if (children[i] != null) {
+				newChildren[i] = (GPNode) children[i].clone();
+				newChildren[i].parent = newNode;
+			}
+			else {
+				// this is a hack but I have no clue why children[i] is sometimes null which means the above can't be used
+				// I think it's due to a race condition.. In debug mode the children array has nodes (non null) but if I use a print
+				// statement, they print null, and get a null pointer exception. 
+				// Setting a delay didn't work
+				String name = ch.get(i).getName();
+				TreeNode parent = ch.get(i).getParent();
+				TerminalTreeNode n = new TerminalTreeNode (name, parent);
+				n.setInputSet(ch.get(i).getInputSet());
+				n.setOutputSet(ch.get(i).getOutputSet());
+				n.qos = ch.get(i).getQos();		
+				newChildren[i] = (GPNode) n;
+			}
 		}
 		newNode.children = newChildren;
+		newNode.ch = ch;
 		newNode.inputSet = inputSet;
 		newNode.outputSet = outputSet;
 		newNode.qos = qos;
@@ -194,5 +213,8 @@ public class SequenceNode extends GPNode implements TreeNode {
 		this.qos = qos;
 	}
 
+	public GPNode[] getCh() {
+		return children;
+	}
 	
 }

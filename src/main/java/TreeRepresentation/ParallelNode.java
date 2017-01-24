@@ -75,6 +75,7 @@ public class ParallelNode extends GPNode implements TreeNode {
 			newChildren[i].parent = newNode;
 		}
 		newNode.children = newChildren;
+		newNode.ch = ch;
 		newNode.inputSet = inputSet;
 		newNode.outputSet = outputSet;
 		newNode.qos = qos;
@@ -186,4 +187,8 @@ public class ParallelNode extends GPNode implements TreeNode {
 		this.qos = qos;
 	}
 
+	public GPNode[] getCh() {
+		return children;
+	}
+	
 }

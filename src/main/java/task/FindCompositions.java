@@ -244,7 +244,7 @@ public class FindCompositions {
 
 	private void findCandidates(Map<List<Node>, Double> timeForEachCandidate) throws OuchException {
 		int size = 0;
-		while(timeForEachCandidate.size()<candidateSize){
+		while(timeForEachCandidate.size()<candidateSize){ 
 			//			System.out.println();
 			//			if(timeForEachCandidate.size()>size){
 			//				size = timeForEachCandidate.size();

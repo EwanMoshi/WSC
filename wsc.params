@@ -1,5 +1,5 @@
 parent.0                                       = koza.params
-
+print-unaccessed-params = true
 seed.0                                         = 1
 
 gp.tree.print-style = dot
@@ -37,11 +37,12 @@ stat.do-final                                  = true
 generations                                    = 5
 
 pop.subpops		                               = 1
-pop.subpop.0.size 	                           = 5
+pop.subpop.0.size 	                           = 30
 pop.subpop.0.duplicate-retries 	               = 0
 pop.subpop.0.species                           = ECJ.WSCSpecies
 pop.subpop.0.species.ind                       = ECJ.WSCIndividual
 pop.subpop.0.species.fitness                   = ec.simple.SimpleFitness
+
 
 # Use simple fitness, and do not quit run early
 pop.subpop.0.species.fitness.maximize          = true
@@ -53,7 +54,7 @@ pop.subpop.0.species.pipe.num-sources          = 3
 pop.subpop.0.species.pipe.source.0             = ECJ.WSCCrossoverPipeline
 pop.subpop.0.species.pipe.source.0.num-sources = 2
 pop.subpop.0.species.pipe.source.1             = ECJ.WSCMutationPipeline
-pop.subpop.0.species.pipe.source.1.prob        = 0.0
+#pop.subpop.0.species.pipe.source.1.prob        = 0.0
 pop.subpop.0.species.pipe.source.1.num-sources = 1
 pop.subpop.0.species.pipe.source.2             = ec.breed.ReproductionPipeline
 pop.subpop.0.species.pipe.source.2.prob        = 0.0
@@ -62,5 +63,6 @@ pop.subpop.0.species.pipe.source.0.source.0	   = ec.select.TournamentSelection
 pop.subpop.0.species.pipe.source.0.source.1	   = ec.select.TournamentSelection
 pop.subpop.0.species.pipe.source.1.source.0	   = ec.select.TournamentSelection
 pop.subpop.0.species.pipe.source.2.source.0	   = ec.select.TournamentSelection
+
 breed.elite.0                                  = 0
 select.tournament.size                         = 2

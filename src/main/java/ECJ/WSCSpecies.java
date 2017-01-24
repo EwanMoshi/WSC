@@ -16,6 +16,10 @@ public class WSCSpecies extends Species {
 
 	private static int treeCounter = 0;
 	
+	private static long startTime;
+	private static long endTime;
+
+	
 	@Override
 	public Parameter defaultBase() {
 		return new Parameter("wscspecies");
@@ -23,6 +27,13 @@ public class WSCSpecies extends Species {
 
 	@Override
 	public Individual newIndividual(EvolutionState state, int thread) {
+		startTime = 0;
+		endTime = 0;
+		
+		startTime = System.currentTimeMillis();
+		
+		System.out.println("Load files Total execution time: " + (endTime - startTime) );
+		
 		WSCInitializer init = (WSCInitializer) state.initializer;
 
 
@@ -48,10 +59,14 @@ public class WSCSpecies extends Species {
 			tree = new WSCIndividual((GPNode) main.rootNode);
 		}
 		
+		endTime = System.currentTimeMillis();
+
 		System.out.println("Printing TREE");
 	    try {
 			FileWriter writer2 = new FileWriter(new File("debug-tree"+treeCounter+".dot"));
 			writer2.append(tree.toString());
+			long totalTime = endTime - startTime;
+			writer2.append("\n\n Time Taken:  "+totalTime);
 			writer2.close();
 			treeCounter++;
 			//System.exit(0);

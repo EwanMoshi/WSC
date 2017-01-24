@@ -27,8 +27,8 @@ public class LoadFiles {
 	private Map<String, ServiceNode> serviceMap = new HashMap<String, ServiceNode>();
 	private Map<String, TaxonomyNode> taxonomyMap = new HashMap<String, TaxonomyNode>();
 	private Set<ServiceNode> serviceNodes = new HashSet<ServiceNode>();
-	private Set<String> taskInputs;
-	private Set<String> taskOutputs;
+	public Set<String> taskInputs;
+	public Set<String> taskOutputs;
 	public static final int TIME = 0;
 	public static final int COST = 1;
 	public static final int AVAILABILITY = 2;
@@ -225,21 +225,27 @@ public class LoadFiles {
 			e.printStackTrace();
 		}
 	}
+	
 	public String getTaskFileName() {
 		return taskFileName;
 	}
+	
 	public Map<String, ServiceNode> getServiceMap() {
 		return serviceMap;
 	}
+	
 	public Map<String, TaxonomyNode> getTaxonomyMap() {
 		return taxonomyMap;
 	}
+	
 	public Set<ServiceNode> getServiceNodes() {
 		return serviceNodes;
 	}
+	
 	public Set<String> getTaskInputs() {
 		return taskInputs;
 	}
+	
 	public Set<String> getTaskOutputs() {
 		return taskOutputs;
 	}

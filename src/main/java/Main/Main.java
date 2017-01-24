@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
@@ -75,14 +77,14 @@ public class Main implements Runnable{
 	private static Node startNode = null;
 	private static Set<ServiceNode> serviceNodes = new HashSet<ServiceNode>();
 	private static String databaseName = "";
-	private static LoadFiles loadFiles = null;
+	public static LoadFiles loadFiles = null;
 	//For setup == file location, composition size, and run test file or not
 	//******************************************************//
 	private final boolean runTestFiles = false;
 	private final static String year = "2008";
 	private final static String dataSet = "01";
 	private final static int individuleNodeSize = 12;
-	private final static int candidateSize = 50;
+	public static int candidateSize = 50;
 	private final boolean runQosDataset = true;
 	private final boolean runMultipileTime = false;
 	private final int timesToRun = 30;
@@ -96,7 +98,8 @@ public class Main implements Runnable{
 
 	public static TreeNode rootNode; // TODO:: static not good here because it means root is always the same??
 	private static int dbCounter = 0;
-
+	public static boolean shouldParseFiles = true;
+	
 	public static void main( String[] args ) throws IOException, OuchException {
 		setupDatabase();
 	}
@@ -193,7 +196,7 @@ public class Main implements Runnable{
 		//2: connect to tempServiceDatabase
 		//3: use task inputs outputs create start and end nodes and link to tempservicedatabase
 		startTime = System.currentTimeMillis();
-		runTask(path);
+		runTask(path); 
 		endTime = System.currentTimeMillis();
 		neo4jwsc.records.put("run task: copied db, create temp db, add start and end nodes", endTime - startTime);
 		System.out.println("run task: copied db, create temp db, add start and end nodes Total execution time: " + (endTime - startTime) );
@@ -302,7 +305,17 @@ public class Main implements Runnable{
 				findCompositions.setM_c(m_c);
 				findCompositions.setM_t(m_t);
 				Map<List<Node>, Map<String,Map<String, Double>>> candidates = findCompositions.run();
-				Map<List<Node>, Map<String,Map<String, Double>>> resultWithQos = findCompositions.getResult(candidates);
+				
+				// pick out a random candidate
+				Random random = new Random();
+				List<List<Node>> keys = new ArrayList<List<Node>> (candidates.keySet());
+				List<Node> randomkey = keys.get(random.nextInt(keys.size()));
+				Map<String,Map<String, Double>> value = candidates.get(randomkey);		
+				Map<List<Node>, Map<String,Map<String, Double>>> randomResultWithQos = new HashMap<List<Node>, Map<String,Map<String, Double>>>();
+				randomResultWithQos.put(randomkey, value);
+				
+				//24 JAN Update: getResult() seems like it slows down execution. Rather than finding best (which takes time), we just choose a random one (above). 
+				//Map<List<Node>, Map<String,Map<String, Double>>> resultWithQos = findCompositions.getResult(candidates);
 				//		bestRels = findCompositions.getBestRels();
 
 				System.out.println("Best result"+ count+": ");
@@ -310,7 +323,10 @@ public class Main implements Runnable{
 
 
 				try{
-					for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry2 : resultWithQos.entrySet()){
+/*					System.out.println("====================================      "+resultWithQos.size());
+					for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry2 : resultWithQos.entrySet()){*/
+					System.out.println("====================================      "+randomResultWithQos.size());
+					for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry2 : randomResultWithQos.entrySet()){
 						String services = "";
 						for(Node n: entry2.getKey()){
 							System.out.print(n.getProperty("name")+"--"+n.getId()+"   ");
@@ -1015,7 +1031,7 @@ public class Main implements Runnable{
 		try{
 			System.out.println("candidates: ");
 			int i = 0;
-			for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry : candidates.entrySet()){
+/*			for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry : candidates.entrySet()){
 
 				System.out.println();
 				System.out.println();
@@ -1035,7 +1051,7 @@ public class Main implements Runnable{
 					System.out.println();
 				}
 				System.out.println();
-			}
+			}*/
 
 		} catch (Exception e) {
 			System.out.println(e);
@@ -1308,13 +1324,18 @@ public class Main implements Runnable{
 
 
 	private static void loadFiles() {
-		loadFiles = new LoadFiles(serviceFileName,taxonomyFileName, taskFileName);
-		loadFiles.runLoadFiles();
-		taxonomyMap = loadFiles.getTaxonomyMap();
-		serviceMap = loadFiles.getServiceMap();
-		//		neo4jwsc.taskInputs = loadFiles.getTaskInputs();
-		loadFiles.getTaskOutputs();
-		serviceNodes = loadFiles.getServiceNodes();
+		if (shouldParseFiles) {
+			loadFiles = new LoadFiles(serviceFileName,taxonomyFileName, taskFileName);
+			loadFiles.runLoadFiles();
+			taxonomyMap = loadFiles.getTaxonomyMap();
+			serviceMap = loadFiles.getServiceMap();
+			//		neo4jwsc.taskInputs = loadFiles.getTaskInputs();
+			loadFiles.getTaskOutputs();
+			serviceNodes = loadFiles.getServiceNodes();
+		}
+		else {
+			loadFiles.getTaskOutputs();
+		}
 	}
 
 

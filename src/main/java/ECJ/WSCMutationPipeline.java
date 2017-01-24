@@ -1,10 +1,13 @@
 package ECJ;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 
+import task.OuchException;
 import Main.Main;
 import TreeRepresentation.TreeNode;
 import ec.BreedingPipeline;
@@ -47,30 +50,54 @@ public class WSCMutationPipeline extends BreedingPipeline {
 			WSCSpecies species = (WSCSpecies) tree.species;
 			
 			// Select random node in tree for mutation
-			List<GPNode> allNodes = new ArrayList<GPNode>();
-			Queue<GPNode> queue = new LinkedList<GPNode>();
+			List<TreeNode> allNodes = new ArrayList<TreeNode>();
+			
+			Queue<TreeNode> queue = new LinkedList<TreeNode>();
+			
+			queue.offer((TreeNode) tree.trees[0].child);
 			
 			while(!queue.isEmpty()) {
-				GPNode current = queue.poll();
+				TreeNode current = queue.poll();
 				allNodes.add(current);
-				if (current.children != null) {
-					for (GPNode child : current.children) {
-						allNodes.add(child);
+				if (current.getChildren() != null) {
+					for (TreeNode child : current.getChildren()) {
+						//allNodes.add(child); // this is in original
+						queue.offer(child);// this isn't in the original ECJTree repo
 					}
 				}
 			}
 			
 			int selectedIndex = init.random.nextInt(allNodes.size());
-			GPNode selectedNode = allNodes.get(selectedIndex);
+			TreeNode selectedNode = allNodes.get(selectedIndex);
+			GPNode selectedNodeCasted = (GPNode) selectedNode;
+			
+			selectedNodeCasted.children = selectedNode.getCh();
+
 			TreeNode tNode = (TreeNode) selectedNode;
 			
-			// TODO: this should create a new tree based on input/output of current node
-			Main main = new Main();
-			GPNode newNode = (GPNode) main.rootNode;
+			Set<String> inputs = tNode.getInputSet();
+			Set<String> outputs = tNode.getOutputSet();
+			Main.loadFiles.taskInputs = inputs;
+			Main.loadFiles.taskOutputs = outputs;
+			Main.shouldParseFiles = false; // set this to false so when we create new subtree, we don't load the task again we simply create
+										   // subtree based on current node's inputs and outputs which have been set above
+			Main.candidateSize = 1; // same as above - this messes it up if it's left at 50
 			
-			tree.replaceNode(selectedNode, newNode);
+			// this should create a new tree based on input/output of currently selected node (tNode from above)
+			//Main main = new Main();
+			
+			try {
+				Main.main(new String[0]);
+			} catch (IOException | OuchException e) {
+				e.printStackTrace();
+			}
+			
+			GPNode newNode = (GPNode) Main.rootNode;
+					
+			tree.replaceNode(selectedNodeCasted, newNode); // 19th JAN START FROM HERE - NULL POINTER sometimes - figure out when and why
 			tree.evaluated = false;
-			
+			Main.shouldParseFiles = true; // set this back to true
+			Main.candidateSize = 50; // go back to original value
 		}
 		
 		return n;

@@ -146,18 +146,22 @@ public class TerminalTreeNode extends GPNode implements TreeNode {
 	}
 
 	public void setQos(double[] qos) {
-		this.qos = qos; // TODO: 12 JAN UPDATE: This is always an array of 0.0, 0.0, 0.0, 0.0
+		this.qos = qos; 
 
 	}
 	
 	@Override
 	public TreeNode clone() {
-		// this should work for all three kinds of nodes (sequence, parallel, and service)
 		TerminalTreeNode newNode = new TerminalTreeNode(name, parent);
 
 		newNode.inputSet = inputSet;
 		newNode.outputSet = outputSet;
 		newNode.qos = qos;
+		
 		return newNode;
+	}
+
+	public GPNode[] getCh() {
+		return children;
 	}
 }
