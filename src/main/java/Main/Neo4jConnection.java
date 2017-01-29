@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import modellingServices.LoadFiles;
+import modellingServices.PopulateTaxonomyTree;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -46,12 +47,12 @@ public class Neo4jConnection {
 	
 	public static GraphDatabaseService graphDatabaseService = null;
 	public static GraphDatabaseService subGraphDatabaseService = null;
-	public static GraphDatabaseService graphDatabaseServiceTemp = null;
+	public static GraphDatabaseService tempGraphDatabaseService = null;
 
 	public static Neo4jConnection dbConnection;
 	
 	public final static String year = "2008";
-	public final static String dataSet = "01";
+	public final static String dataSet = "03";
 	public static String databaseName = "";
 
 	public static Node endNode = null;
@@ -61,6 +62,8 @@ public class Neo4jConnection {
 	public static ReduceGraphDb reduceGraphDb = null;
 	
 	public static Set<ServiceNode> serviceNodes = new HashSet<ServiceNode>();
+
+	public static int dbCounter = 0;
 
 	
 	private Neo4jConnection() {}
@@ -99,9 +102,12 @@ public class Neo4jConnection {
 		}else{
 			path = dbpath+""+databaseName;
 		}
+		
 		GenerateDatabase generateDatabase = new GenerateDatabase(null, null,path);
-		generateDatabase.createDbService();
-		graphDatabaseService = generateDatabase.getGraphDatabaseService();
+		//generateDatabase.createDbService();
+		graphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(Neo4j_ServicesDBPath+""+databaseName));
+		//graphDatabaseService = generateDatabase.getGraphDatabaseService();
+		
 		registerShutdownHook(graphDatabaseService, string);
 		generateDatabase.setServiceMap(serviceMap);
 		generateDatabase.setTaxonomyMap(taxonomyMap);
@@ -141,7 +147,7 @@ public class Neo4jConnection {
 	public void reduceDB() {
 		if (reduceGraphDb == null) {
 			reduceGraphDb = new ReduceGraphDb(graphDatabaseService);
-
+			
 			reduceGraphDb.setStartNode(startNode);
 			reduceGraphDb.setEndNode(endNode);
 			reduceGraphDb.setNeo4jServNodes(neo4jServNodes);
@@ -155,7 +161,7 @@ public class Neo4jConnection {
 			
 			reduceGraphDb.createNodes(relatedNodes);
 			reduceGraphDb.createRel();
-			relatedNodes = reduceGraphDb.getRelatedNodes();
+			// relatedNodes = reduceGraphDb.getRelatedNodes(); 25th: for some reason, relatedNodes is empty
 			startNode = reduceGraphDb.getStartNode();
 			endNode = reduceGraphDb.getEndNode();
 			subGraphDatabaseService = reduceGraphDb.getSubGraphDatabaseService();
@@ -173,8 +179,8 @@ public class Neo4jConnection {
 			runtask.setTaskOutputs(loadFiles.getTaskOutputs());
 			runtask.copyDb();
 			runtask.createTempDb();
-			graphDatabaseServiceTemp = runtask.getTempGraphDatabaseService();
-			registerShutdownHook(graphDatabaseServiceTemp, "Temp");
+			tempGraphDatabaseService = runtask.getTempGraphDatabaseService();
+			registerShutdownHook(tempGraphDatabaseService, "Temp");
 			neo4jServNodes.clear();
 			neo4jServNodes = runtask.getNeo4jServNodes();
 			tempServices = runtask.getTempServices();
@@ -194,6 +200,13 @@ public class Neo4jConnection {
 		//		neo4jwsc.taskInputs = loadFiles.getTaskInputs();
 		loadFiles.getTaskOutputs();
 		serviceNodes = loadFiles.getServiceNodes();
+	}
+	
+	public static void populateTaxonomyTree() {
+		PopulateTaxonomyTree populateTaxonomyTree = new PopulateTaxonomyTree();
+		populateTaxonomyTree.setTaxonomyMap(taxonomyMap);
+		populateTaxonomyTree.setServiceMap(serviceMap);
+		populateTaxonomyTree.populateTaxonomyTree();
 	}
 	
 	private static void registerShutdownHook(GraphDatabaseService graphDatabaseService, String database ) {

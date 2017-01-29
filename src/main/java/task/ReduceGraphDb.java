@@ -28,6 +28,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.Traversal;
 
+import Main.Neo4jConnection;
 import component.ServiceNode;
 import component.TaxonomyNode;
 
@@ -134,7 +135,7 @@ public class ReduceGraphDb {
 	}
 	
 	public GraphDatabaseService getSubGraphDatabaseService(){
-		return this.subGraphDatabaseService;
+		return subGraphDatabaseService;
 	}
 	
 	public void setNeo4jServNodes(Map<String, Node> neo4jServNodes){
@@ -162,7 +163,9 @@ public class ReduceGraphDb {
 		}
 	}
 	private boolean hasRel(Node firstNode, Node secondNode, Set<Node> releatedNodes) {
-		Transaction transaction = graphDatabaseService.beginTx();
+		Transaction transaction = Neo4jConnection.tempGraphDatabaseService.beginTx();
+		
+
 		try {
 			if(releatedNodes==null){
 				PathFinder<Path> finder = GraphAlgoFactory.shortestPath(Traversal.expanderForTypes(RelTypes.IN, Direction.OUTGOING), neo4jServNodes.size());                  
@@ -171,19 +174,16 @@ public class ReduceGraphDb {
 					transaction.success();
 					return true;
 				}
-				transaction.success();
-				return false;
 			}
 			else{
 				PathFinder<Path> finder = GraphAlgoFactory.shortestPath(Traversal.expanderForTypes(RelTypes.IN, Direction.OUTGOING), neo4jServNodes.size());                  
-	
+									
 				if(finder.findSinglePath(firstNode, secondNode)!=null){
 					transaction.success();
 					return true;
 				}
-				transaction.success();
-				return false;
 			}
+		transaction.success();
 		} catch (Exception e) {
 	        System.err.println(e.getMessage());
 	        System.out.println("graphDatabaseService ERRRRORRRRRRR");
@@ -194,57 +194,84 @@ public class ReduceGraphDb {
 	}
 
 	private void removeNoneFulFillNodes(Set<Node> releatedNodes) {
-		Transaction transaction = graphDatabaseService.beginTx();
-		Set<Node>copied = new HashSet<Node>(releatedNodes);
-		boolean removed = false;
-		for(Node sNode: copied){
-			if(!fulfill(sNode, copied) && !sNode.getProperty("name").equals("end")&& !sNode.getProperty("name").equals("start")){
-				removed = true;
-				releatedNodes.remove(sNode);
+		Transaction transaction = Neo4jConnection.tempGraphDatabaseService.beginTx();
+		boolean closed = false;
+		try {
+			Set<Node>copied = new HashSet<Node>(releatedNodes);
+			boolean removed = false;
+			for(Node sNode: copied){
+				if(!fulfill(sNode, copied) && !sNode.getProperty("name").equals("end")&& !sNode.getProperty("name").equals("start")){
+					removed = true;
+					releatedNodes.remove(sNode);
+				}
 			}
-		}
-		if(removed){
-			findAllReleatedNodes(releatedNodes, true);
-		}
-		transaction.finish();
-		transaction.close();
+			if(removed){
+				findAllReleatedNodes(releatedNodes, true);
+			}
+		transaction.success();
+		} catch (Exception e) {
+	        System.err.println(e.getMessage());
+	    } finally {
+	    	transaction.close();
+	    }
+
 	}
 	private boolean fulfill(Node sNode, Set<Node> releatedNodes) {
-		Transaction transaction = graphDatabaseService.beginTx();
+		//Transaction transaction = graphDatabaseService.beginTx();
 		boolean fulfill = false;
-		Set<String> inputs = new HashSet<String>();
-		List<String> sNodeInputs = Arrays.asList(getNodePropertyArray(sNode,"inputs",graphDatabaseService));
-		for(Relationship r: sNode.getRelationships(Direction.INCOMING)){
-			String from = (String) r.getProperty("From");
-			Node fromNode = neo4jServNodes.get(from);
-			if(releatedNodes.contains(fromNode)){
-				inputs.addAll(Arrays.asList(getNodeRelationshipPropertyArray(r,"outputs")));
-			}
-			List<String> temp = new ArrayList<String>(sNodeInputs); 
-			temp.retainAll(inputs);
-			if(temp.size()==sNodeInputs.size()){
-				fulfill = true;
-			}
-		}
-		transaction.finish();
-		transaction.close();
+		
+
+			Set<String> inputs = new HashSet<String>();
+			List<String> sNodeInputs = Arrays.asList(getNodePropertyArray(sNode,"inputs", graphDatabaseService));
+			
+			Transaction transaction = Neo4jConnection.tempGraphDatabaseService.beginTx();
+			try {
+				for(Relationship r: sNode.getRelationships(Direction.INCOMING)){
+					String from = (String) r.getProperty("From");
+					Node fromNode = neo4jServNodes.get(from);
+					if(releatedNodes.contains(fromNode)){
+						inputs.addAll(Arrays.asList(getNodeRelationshipPropertyArray(r,"outputs")));
+					}
+					List<String> temp = new ArrayList<String>(sNodeInputs); 
+					temp.retainAll(inputs);
+					if(temp.size()==sNodeInputs.size()){
+						fulfill = true;
+					}
+				}
+				transaction.success();
+
+			} catch (Exception e) {
+		        System.err.println(e.getMessage());
+		    } finally {
+		    	transaction.close();
+		    }
+			
+	
 		return fulfill;
 	}
 
 	private String[] getNodePropertyArray(Node node, String property, GraphDatabaseService graphDatabaseService){
-		Transaction transaction = graphDatabaseService.beginTx();
-		Object obj =node.getProperty(property);
-		transaction.close();
-		//    		//remove the "[" and "]" from string
-		String ips = Arrays.toString((String[]) obj).substring(1, Arrays.toString((String[]) obj).length()-1);
-		String[] tempInputs = ips.split("\\s*,\\s*");
+		Transaction transaction = Neo4jConnection.tempGraphDatabaseService.beginTx();
 		String[] array = new String[0];
-		for(String s: tempInputs){
-			if(s.length()>0){
-				array =increaseArray(array);
-				array[array.length-1] = s;
+		
+		try {
+			Object obj =node.getProperty(property);
+			//    		//remove the "[" and "]" from string
+			String ips = Arrays.toString((String[]) obj).substring(1, Arrays.toString((String[]) obj).length()-1);
+			String[] tempInputs = ips.split("\\s*,\\s*");
+			for(String s: tempInputs){
+				if(s.length()>0){
+					array =increaseArray(array);
+					array[array.length-1] = s;
+				}
 			}
-		}
+		
+		transaction.success();
+		} catch (Exception e) {
+			System.out.println(e);
+		} finally {
+			transaction.close();
+		}	
 
 		return array;
 	}
@@ -277,6 +304,7 @@ public class ReduceGraphDb {
 					array[array.length-1] = s;
 				}
 			}
+			t.success();
 		} catch (Exception e) {
 			System.out.println(e);
 			System.out.println("getNodeRelationshipPropertyArray error.."); 
@@ -305,8 +333,16 @@ public class ReduceGraphDb {
 	public void createRel(){
 		for(Node sNode: subGraphNodes){
 			Transaction transaction = subGraphDatabaseService.beginTx();
-			String nodeName = (String) sNode.getProperty("name");
-			transaction.close();
+			String nodeName = "";
+			try {
+				nodeName = (String) sNode.getProperty("name");
+				transaction.success();
+			} catch(Exception e){
+				e.printStackTrace();
+			}finally{
+				transaction.close();
+			}
+			
 			if(nodeName.equals("start")){
 				startNode = sNode;
 				addStartNodeRel(sNode);
@@ -324,7 +360,7 @@ public class ReduceGraphDb {
 				for(String s: outputs){
 					Node outputsServicesNode = subGraphNodesMap.get(s);
 
-					String[] tempToArray = getOutputs(sNode, outputsServicesNode,subGraphDatabaseService);
+					String[] tempToArray = getOutputs(sNode, outputsServicesNode, subGraphDatabaseService);
 					relation = sNode.createRelationshipTo(outputsServicesNode, RelTypes.IN);
 					relation.setProperty("From", (String)sNode.getProperty("name"));
 					relation.setProperty("To", s);
@@ -370,7 +406,6 @@ public class ReduceGraphDb {
 					relation.setProperty("Direction", "incoming");    
 				}
 			}
-			transaction.success();	
 
 			if(sNode.getProperty("name").equals("end")){
 				endNode = sNode;
@@ -386,19 +421,26 @@ public class ReduceGraphDb {
 		}
 	}
 	
-	public void createNodes(Set<Node>relatedNodes, int dbCounter){
+	public void createNodes(Set<Node>relatedNodes){
 		try {
 			FileUtils.deleteRecursively(new File(Neo4j_subDBPath));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		subGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(Neo4j_subDBPath+dbCounter));
+		subGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(Neo4j_subDBPath));
+		
 		Transaction t = subGraphDatabaseService.beginTx();
-		index = subGraphDatabaseService.index();
-		services = index.forNodes( "identifiers" );
-		t.close();
+		try {
+			index = subGraphDatabaseService.index();
+			services = index.forNodes( "identifiers" );
+			t.success();
+		} catch(Exception e){
+			System.out.println(e.getMessage());
+		}finally{
+			t.close();
+		}
 
-		Transaction transaction = graphDatabaseService.beginTx();
+
 
 		for(Node sNode: relatedNodes) {
 			
@@ -416,9 +458,12 @@ public class ReduceGraphDb {
 				priousNodeNames = new String[0];
 			}
 			//
+			
 			Transaction tx = subGraphDatabaseService.beginTx();
-			Node service = subGraphDatabaseService.createNode();
+			Transaction transaction = Neo4jConnection.tempGraphDatabaseService.beginTx();
+
 			try{
+				Node service = subGraphDatabaseService.createNode();
 				double[] qos = new double[4];
 				if(sNode.getProperty("name").equals("start")||sNode.getProperty("name").equals("end")){
 					qos = new double[4];
@@ -439,8 +484,8 @@ public class ReduceGraphDb {
 				services.add(service, "name", service.getProperty("name"));
 				service.setProperty("qos", qos);
 				service.setProperty("weight", 0);
-				service.setProperty("inputs", getNodePropertyArray(sNode,"inputs",graphDatabaseService));
-				service.setProperty("outputs", getNodePropertyArray(sNode,"outputs",graphDatabaseService));
+				service.setProperty("inputs", getNodePropertyArray(sNode,"inputs", graphDatabaseService));
+				service.setProperty("outputs", getNodePropertyArray(sNode,"outputs", graphDatabaseService));
 				service.setProperty("inputServices", inputServices);
 				service.setProperty("outputServices", outputServices);
 				service.setProperty("priousNodeNames",priousNodeNames);
@@ -454,15 +499,17 @@ public class ReduceGraphDb {
 				subGraphNodes.add(service);
 				subGraphNodesMap.put((String) sNode.getProperty("name"), service);
 				tx.success();
+				transaction.success();
 			}catch(Exception e){
 				System.out.println("createGraphDatabase:  subGraphDatabaseService    "+ e);
 			}finally{
 				tx.close();
+				transaction.close();
 			}
 
 		}	
-		transaction.close();
 	}
+	
 	private void calculateNormalisationBounds(double[] qos) {
 
 		// Availability
@@ -496,7 +543,7 @@ public class ReduceGraphDb {
 	}
 
 	private String[] getInputOutputServicesForSubGraph(Node sNode, Set<Node> releatedNodes, String inputOrOutput) {
-		Transaction tx = subGraphDatabaseService.beginTx();
+		Transaction tx = Neo4jConnection.tempGraphDatabaseService.beginTx();
 		
 		String [] toReturn = null;
 		try{
@@ -518,7 +565,7 @@ public class ReduceGraphDb {
 				}
 			}
 			else if(inputOrOutput.equals("outputServices")){
-				List<String>outputServicesList = Arrays.asList(getNodePropertyArray(sNode,"outputServices",graphDatabaseService));
+				List<String>outputServicesList = Arrays.asList(getNodePropertyArray(sNode,"outputServices", graphDatabaseService));
 				if(outputServicesList.size()>0){
 					List<String>tempOutputServices = new ArrayList<String>(outputServicesList);
 					tempOutputServices.retainAll(releatedNodesNames);
@@ -530,7 +577,7 @@ public class ReduceGraphDb {
 				}
 			}
 			else if(inputOrOutput.equals("priousNodeNames")){
-				List<String>priousNodeNames = Arrays.asList(getNodePropertyArray(sNode,"priousNodeNames",graphDatabaseService));
+				List<String>priousNodeNames = Arrays.asList(getNodePropertyArray(sNode,"priousNodeNames", graphDatabaseService));
 				if(priousNodeNames.size()>0){
 					List<String>tempPriousNodeNames = new ArrayList<String>(priousNodeNames);
 					tempPriousNodeNames.retainAll(releatedNodesNames);
@@ -542,7 +589,7 @@ public class ReduceGraphDb {
 				}
 			}
 			tx.success();
-		}catch(Exception e){
+		} catch(Exception e){
 			System.out.println("getInputOutputServicesForSubGraph    "+e);
 		}finally{
 			tx.close();
@@ -553,7 +600,7 @@ public class ReduceGraphDb {
 	private static enum RelTypes implements RelationshipType{
 		PARENT, CHILD, OUTPUT, INPUT, TO, IN, OUT
 	}
-	private String[] getOutputs(Node node, Node sNode,GraphDatabaseService graphDatabaseService) {
+	private String[] getOutputs(Node node, Node sNode, GraphDatabaseService graphDatabaseService) {
 		Transaction transaction = graphDatabaseService.beginTx();
 		List<String>snodeOutputs = new ArrayList<String>();
 		List<String>nodeInputs =  new ArrayList<String>();

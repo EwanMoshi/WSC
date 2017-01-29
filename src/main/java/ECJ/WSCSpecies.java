@@ -63,7 +63,7 @@ public class WSCSpecies extends Species {
 
 		System.out.println("Printing TREE");
 	    try {
-			FileWriter writer2 = new FileWriter(new File("debug-tree"+treeCounter+".dot"));
+			FileWriter writer2 = new FileWriter(new File("dotTrees/debug-tree"+treeCounter+".dot"));
 			writer2.append(tree.toString());
 			long totalTime = endTime - startTime;
 			writer2.append("\n\n Time Taken:  "+totalTime);

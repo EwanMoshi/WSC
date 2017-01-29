@@ -149,7 +149,6 @@ public class LoadFiles {
 					org.w3c.dom.Node in = inputNodes.item(j);
 					Element e = (Element) in;
 					String input = e.getAttribute("name");
-
 					inputs.add(input);
 				}
 				// Get outputs

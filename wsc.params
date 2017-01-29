@@ -30,11 +30,12 @@ eval.problem                                   = ECJ.WSCProblem
 init                                           = ECJ.WSCInitializer
 eval.problem.data                              = ECJ.WSCData
 
+stat 										   = ECJ.GraphStatistics
 stat.file		                               = $out.stat
 stat.do-time                                   = true
 stat.do-final                                  = true
 
-generations                                    = 5
+generations                                    = 50
 
 pop.subpops		                               = 1
 pop.subpop.0.size 	                           = 30

@@ -22,13 +22,15 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 
+import Main.Neo4jConnection;
 import TreeRepresentation.TreeNode;
 import component.ServiceNode;
 import component.TaxonomyNode;
 
 public class GenerateDatabase {
-	private GraphDatabaseService newGraphDatabaseService;
-	private GraphDatabaseService oldGraphDatabaseService;	
+	private static GraphDatabaseService newGraphDatabaseService;
+	private static GraphDatabaseService oldGraphDatabaseService;
+	private static GraphDatabaseService newResultGraphDatabaseService;
 	private List<Node> graphNodes = new ArrayList<Node>();
 
 	private String databasePath;
@@ -53,6 +55,8 @@ public class GenerateDatabase {
 	private static final int AVAILABILITY = 2;
 	private static final int RELIABILITY = 3;
 
+	public boolean useNew = false;
+	
 	public GenerateDatabase(List<Node> graphNodes, GraphDatabaseService oldGraphDatabaseService, String databasePath) {
 		this.databasePath = databasePath;
 		this.graphNodes = graphNodes;
@@ -68,9 +72,21 @@ public class GenerateDatabase {
 	}
 
 	@SuppressWarnings("deprecation")
-	public void createDbService() {
-		newGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(databasePath));
-
+	public void createDbService(boolean newResult) {
+		
+		if (newResultGraphDatabaseService == null) {
+			newResultGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(databasePath));
+		}
+		else if (newResult) {
+			newResultGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(databasePath));
+		}
+		
+/*		if (newGraphDatabaseService == null) {
+			newGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(databasePath));
+		}
+		else if (newResult) {
+			newResultGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(databasePath));
+		}*/
 	}
 	public void addServiceNodeRelationShip() {
 //		System.out.println(bestRels.size());
@@ -79,72 +95,25 @@ public class GenerateDatabase {
 			Map<String,List<String>> inputServices = new HashMap<String,List<String>>();
 			//		Map<String,List<String>> serviceOutputs = new HashMap<String,List<String>>();
 			for(Node sNode: neo4jServiceNodes){
-				Transaction transaction = newGraphDatabaseService.beginTx();
-				transaction.close();
+				// TODO: 25th: Do I really need this transaction? looks like it doesn't do anything
+				//Transaction transaction = Neo4jConnection.graphDatabaseService.beginTx();
+				//transaction.close();
 				addInputsServiceRelationship(sNode, maps, inputServices);
 			}
 			servicesWithInputs = inputServices;
-
-			//		servicesWithOutputs = serviceOutputs;
-//		}
-//		else{
-//			System.out.println(neo4jServNodes.size());
-//			for(String node: neo4jServNodes.keySet()){
-//				System.out.println(node);
-//			}
-//			System.out.println();
-//			for(Map<String,String> rels: bestRels){
-//				for(Map.Entry<String, String> rel: rels.entrySet()){
-//					String from = rel.getKey();
-//					String to = rel.getValue();
-//					System.out.println(from+"     "+to);
-//				}
-//				for(Map.Entry<String, String> rel: rels.entrySet()){
-//					Transaction transaction = newGraphDatabaseService.beginTx();
-//					try{
-//						String from = rel.getKey();
-//						String to = rel.getValue();
-//						System.out.println(from+"     "+to);
-//						Node fromNode = neo4jServNodes.get(from);
-//						Node toNode = neo4jServNodes.get(to);
-//						System.out.println(fromNode.getId()+"     "+toNode.getId());
-//						ServiceNode serviceNode = serviceMap.get(from);
-//						String[] tempToArray = getOutputs(fromNode, toNode, newGraphDatabaseService);
-//						relation = fromNode.createRelationshipTo(toNode, RelTypes.IN);
-//						relation.setProperty("From", from);
-//						relation.setProperty("To", to);
-//						relation.setProperty("outputs", tempToArray);
-//						relation.setProperty("Direction", "incoming");    
-//						if(from.equals("start")){
-//							relation.setProperty("weightTime", 0);
-//							relation.setProperty("weightCost", 0);
-//							relation.setProperty("weightAvailibility", 0);
-//							relation.setProperty("weightReliability", 0);
-//						}
-//						else{
-//							relation.setProperty("weightTime", serviceNode.getQos()[TIME]);
-//							relation.setProperty("weightCost", serviceNode.getQos()[COST]);
-//							relation.setProperty("weightAvailibility", serviceNode.getQos()[AVAILABILITY]);
-//							relation.setProperty("weightReliability", serviceNode.getQos()[RELIABILITY]);
-//						}
-//						transaction.success();
-//					}catch(Exception e){
-//						System.out.println(e);
-//						System.out.println("GenerateDatabase addServiceNodeRelationShip error.."); 
-//					}
-//					finally{
-//						transaction.close();
-//					}
-//				}
-//
-//			}
-//		}
 	}
 
 
 	private void addInputsServiceRelationship(Node sNode, Map<String, Object>maps, Map<String, List<String>> inputServices) {
-		Transaction transaction = newGraphDatabaseService.beginTx();
-		//		double sNodeWeight = (double) sNode.getProperty("weight");
+		Transaction transaction;
+		if (useNew) {
+			transaction = newResultGraphDatabaseService.beginTx();
+
+		}
+		else {
+			transaction = Neo4jConnection.graphDatabaseService.beginTx();
+		}
+
 		try{
 			String[] inputs;
 			if(sNode.getProperty("name").equals("start")){
@@ -158,7 +127,13 @@ public class GenerateDatabase {
 					ServiceNode serviceNode = serviceMap.get(s);
 					Node inputsServicesNode = neo4jServNodes.get(s);
 					if(sNode.getProperty("name").equals("start")){
-						String[] tempToArray = getOutputs(sNode, inputsServicesNode, newGraphDatabaseService);
+						String[] tempToArray;
+						if (useNew) {
+							tempToArray = getOutputs(sNode, inputsServicesNode, newResultGraphDatabaseService);
+						}
+						else {
+							tempToArray = getOutputs(sNode, inputsServicesNode, Neo4jConnection.graphDatabaseService);
+						}
 						relation = sNode.createRelationshipTo(inputsServicesNode, RelTypes.IN);
 						relation.setProperty("From", (String)sNode.getProperty("name"));
 						relation.setProperty("To", s);
@@ -172,7 +147,7 @@ public class GenerateDatabase {
 					}
 					else{
 						if(!inputsServicesNode.getProperty("name").equals(sNode.getProperty("name"))){
-							String[] tempToArray = getOutputs(inputsServicesNode, sNode, newGraphDatabaseService);
+							String[] tempToArray = getOutputs(inputsServicesNode, sNode, Neo4jConnection.graphDatabaseService);
 							relation = inputsServicesNode.createRelationshipTo(sNode, RelTypes.IN);
 							relation.setProperty("From", s);
 							relation.setProperty("To", (String)sNode.getProperty("name"));
@@ -226,11 +201,19 @@ public class GenerateDatabase {
 		return tempToArray;
 	}
 	public void createServicesDatabase() {	
+		Transaction transaction;
 		if (graphNodes==null) {
-			Transaction transaction = newGraphDatabaseService.beginTx();
+			if (useNew) {
+				transaction = newResultGraphDatabaseService.beginTx();
+			}
+			else {
+				transaction = Neo4jConnection.graphDatabaseService.beginTx();
+			}
+			//Transaction transaction = Neo4jConnection.graphDatabaseService.beginTx();
+
 			neo4jServiceNodes = new Node[0];
 			try{
-				index = newGraphDatabaseService.index();
+				index = Neo4jConnection.graphDatabaseService.index();
 				services = index.forNodes( "identifiers" );
 				int i = 0;
 				
@@ -240,7 +223,7 @@ public class GenerateDatabase {
 					ServiceNode value = entry.getValue();
 					//double weight = calculateWeight(value.getQos());
 					double weight = 0;
-					Node service = newGraphDatabaseService.createNode();
+					Node service = Neo4jConnection.graphDatabaseService.createNode();
 					String [] priousNodeNames = new String[0];
 					Label nodeLable = DynamicLabel.label(key);
 					service.addLabel(nodeLable);
@@ -272,7 +255,7 @@ public class GenerateDatabase {
 	
 			List<Node>nNodes = new ArrayList<Node>();
 			neo4jServiceNodes = new Node[0];
-			Transaction transaction = oldGraphDatabaseService.beginTx();
+			transaction = oldGraphDatabaseService.beginTx();
 	
 			//List<TreeNode> tree = new ArrayList<TreeNode>();
 					
@@ -312,10 +295,24 @@ public class GenerateDatabase {
 					priousNodeNames = new String[0];
 				}
 			
-				
-				Transaction tx = newGraphDatabaseService.beginTx();
-				Node service = newGraphDatabaseService.createNode();
-				index = newGraphDatabaseService.index();
+				// newGraphDatabaseService
+				Transaction tx;
+				Node service;
+				if (useNew) {
+					tx = newResultGraphDatabaseService.beginTx();
+					service = newResultGraphDatabaseService.createNode();
+					index = newResultGraphDatabaseService.index();				
+				}
+				else {
+					tx = Neo4jConnection.graphDatabaseService.beginTx();
+					service = Neo4jConnection.graphDatabaseService.createNode();
+					index = Neo4jConnection.graphDatabaseService.index();
+				}
+				//Transaction tx = Neo4jConnection.graphDatabaseService.beginTx();
+				//Node service = Neo4jConnection.graphDatabaseService.createNode();
+				//index = Neo4jConnection.graphDatabaseService.index();
+
+
 				services = index.forNodes( "identifiers" );
 				try {
 					double[] qos = new double[4];
@@ -373,9 +370,16 @@ public class GenerateDatabase {
 	public Map<String, Node> getNeo4jServNodes(){
 		return neo4jServNodes;
 	}
+	
 	public GraphDatabaseService getGraphDatabaseService(){
-		return newGraphDatabaseService;
+		if (useNew) {
+			return newResultGraphDatabaseService;
+		}
+		else {
+			return newGraphDatabaseService;
+		}
 	}
+	
 	public IndexManager getIndex() {
 		return index;
 	}

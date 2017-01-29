@@ -11,6 +11,8 @@ import ec.EvolutionState;
 import ec.util.*;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 
 /* 
@@ -118,6 +120,18 @@ import java.io.PrintWriter;
 
 public class Evolve 
     {
+	
+	private static long startTime;
+	private static long endTime;
+	private static int timeFileCounter = 0;
+	public static double bestFitness = -1;
+
+	public static double bestA = 0;
+	public static double bestR = 0;
+	public static double bestT = 0;
+	public static double bestC = 0;
+
+	
     public final static String P_PRINTACCESSEDPARAMETERS = "print-accessed-params";
     public final static String P_PRINTUSEDPARAMETERS = "print-used-params";
     public final static String P_PRINTALLPARAMETERS = "print-all-params";
@@ -766,10 +780,38 @@ public class Evolve
 
 
 
-
+        		
+        		startTime = 0;
+        		endTime = 0;
+        		
+        		startTime = System.currentTimeMillis();
+        		
+                
                 
                 // now we let it go
                 state.run(EvolutionState.C_STARTED_FRESH);
+                
+    			endTime = System.currentTimeMillis();
+    			
+    			System.out.println("Printing Time");
+    		    try {
+    				FileWriter writer2 = new FileWriter(new File("TimeRecords/Time"+timeFileCounter+".dot"));
+    				long totalTime = endTime - startTime;
+    				writer2.append("\n\n Time Taken:  "+totalTime);
+    				writer2.append("\n\n Best non-normalized Availability:  "+bestA);
+    				writer2.append("\n\n Best non-normalized Reliability:  "+bestR);
+    				writer2.append("\n\n Best non-normalized Cost:  "+bestC);
+    				writer2.append("\n\n Best non-normalized Time:  "+bestT);
+    				writer2.append("\n\n Best Fitness:  "+bestFitness);
+
+    				writer2.close();
+    				//System.exit(0);
+    				timeFileCounter++;
+    			} catch (IOException e) {
+    				e.printStackTrace();
+    			}
+                
+                
                 cleanup(state);  // flush and close various streams, print out parameters if necessary
                 parameters = null;  // so we load a fresh database next time around
                 }

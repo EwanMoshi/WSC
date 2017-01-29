@@ -112,8 +112,8 @@ public class RunTask {
 
 	}
 	@SuppressWarnings("deprecation")
-	public void createTempDb(int dbCounter) {
-		tempGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(Neo4j_tempDBPath+dbCounter));
+	public void createTempDb() {
+		tempGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(Neo4j_tempDBPath));
 		Transaction transaction = tempGraphDatabaseService.beginTx();
 		try{
 			tempIndex = tempGraphDatabaseService.index();
@@ -132,11 +132,11 @@ public class RunTask {
 		}		
 	}
 	
-	public void copyDb(int dbCounter) {
+	public void copyDb() {
 		File srcDir = new File(path);
-		File destDir = new File(Neo4j_tempDBPath+dbCounter);
+		File destDir = new File(Neo4j_tempDBPath);
 		try {
-			FileUtils.deleteRecursively(new File(Neo4j_tempDBPath+dbCounter));
+			FileUtils.deleteRecursively(new File(Neo4j_tempDBPath));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

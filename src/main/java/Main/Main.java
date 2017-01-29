@@ -82,7 +82,7 @@ public class Main implements Runnable{
 	//******************************************************//
 	private final boolean runTestFiles = false;
 	private final static String year = "2008";
-	private final static String dataSet = "01";
+	private final static String dataSet = "03";
 	private final static int individuleNodeSize = 12;
 	public static int candidateSize = 50;
 	private final boolean runQosDataset = true;
@@ -97,9 +97,11 @@ public class Main implements Runnable{
 	//******************************************************//
 
 	public static TreeNode rootNode; // TODO:: static not good here because it means root is always the same??
-	private static int dbCounter = 0;
+	//private static int dbCounter = 0;
+	private static int newDBCounter = 0; 
+
 	public static boolean shouldParseFiles = true;
-	
+	public static Neo4jConnection globalConnection; 
 	public static void main( String[] args ) throws IOException, OuchException {
 		setupDatabase();
 	}
@@ -107,7 +109,9 @@ public class Main implements Runnable{
 
     private static TreeNode setupDatabase() throws IOException, OuchException {
 		Main neo4jwsc = new Main();
-		dbCounter++;
+		globalConnection = Neo4jConnection.getInstance(); // set up the neo4j connection
+
+		//dbCounter++;
 
 
 		//		Thread t = new Thread(neo4jwsc,"Neo4jThread");
@@ -116,22 +120,25 @@ public class Main implements Runnable{
 		String path;
 		if(!neo4jwsc.runTestFiles){
 			if(!neo4jwsc.runQosDataset){
-				serviceFileName = "dataset/wsc"+year+"/Set"+dataSet+"MetaData/services.xml";
-				taxonomyFileName = "dataset/wsc"+year+"/Set"+dataSet+"MetaData/taxonomy.xml";
-				taskFileName = "dataset/wsc"+year+"/Set"+dataSet+"MetaData/problem.xml";
+				globalConnection.serviceFileName = "dataset/wsc"+year+"/Set"+dataSet+"MetaData/services.xml";
+				globalConnection.taxonomyFileName = "dataset/wsc"+year+"/Set"+dataSet+"MetaData/taxonomy.xml";
+				globalConnection.taskFileName = "dataset/wsc"+year+"/Set"+dataSet+"MetaData/problem.xml";
 			}else{
-				serviceFileName = "dataset/Dataset/Set"+dataSet+"MetaData/services-output.xml";
-				taxonomyFileName = "dataset/Dataset/Set"+dataSet+"MetaData/taxonomy.xml";
-				taskFileName = "dataset/Dataset/Set"+dataSet+"MetaData/problem.xml";
+				globalConnection.serviceFileName = "dataset/Dataset/Set"+dataSet+"MetaData/services-output.xml";
+				globalConnection.taxonomyFileName = "dataset/Dataset/Set"+dataSet+"MetaData/taxonomy.xml";
+				globalConnection.taskFileName = "dataset/Dataset/Set"+dataSet+"MetaData/problem.xml";
 			}
 		}else{
-			serviceFileName = "dataset/test/test_serv.xml";
-			taxonomyFileName = "dataset/test/test_taxonomy.xml";
-			taskFileName = "dataset/test/test_problem.xml";
+			globalConnection.serviceFileName = "dataset/test/test_serv.xml";
+			globalConnection.taxonomyFileName = "dataset/test/test_taxonomy.xml";
+			globalConnection.taskFileName = "dataset/test/test_problem.xml";
 		}
 		//load files
 		long startTime = System.currentTimeMillis();
-		loadFiles();
+		
+		//loadFiles();
+		globalConnection.loadFiles();
+		
 		long endTime = System.currentTimeMillis();
 		neo4jwsc.records.put("Load files", endTime - startTime);
 		System.out.println("Load files Total execution time: " + (endTime - startTime) );
@@ -139,7 +146,10 @@ public class Main implements Runnable{
 
 		//populateTaxonomytree
 		startTime = System.currentTimeMillis();
-		populateTaxonomytree(); // Algorithm 1
+		
+		//populateTaxonomytree(); // Algorithm 1
+		globalConnection.populateTaxonomyTree();
+		
 		endTime = System.currentTimeMillis();
 		neo4jwsc.records.put("Populate Taxonomy Tree", endTime - startTime);
 		System.out.println("Populate Taxonomy Tree total execution time: " + (endTime - startTime) );
@@ -158,7 +168,10 @@ public class Main implements Runnable{
 			}
 			if(dbExist){
 				startTime = System.currentTimeMillis();
-				loadExistingDB();
+				
+				//loadExistingDB();
+				globalConnection.loadExistingDB();
+				
 				endTime = System.currentTimeMillis();
 				neo4jwsc.records.put("Load existing db", endTime - startTime);
 				System.out.println("Load existing db Total execution time: " + (endTime - startTime) );
@@ -166,13 +179,16 @@ public class Main implements Runnable{
 			}else{
 
 				startTime = System.currentTimeMillis();
-				neo4jwsc.generateDB(null,Neo4j_ServicesDBPath,"original",databaseName+dbCounter);
+				
+				//neo4jwsc.generateDB(null,Neo4j_ServicesDBPath,"original",databaseName+dbCounter);
+				globalConnection.generateDB(null,Neo4j_ServicesDBPath,"original",databaseName);
+						
 				endTime = System.currentTimeMillis();
 				neo4jwsc.records.put("Create new db", endTime - startTime);
 				System.out.println("Create new db Total execution time: " + (endTime - startTime) );
 
 			}
-			path = Neo4j_ServicesDBPath+""+databaseName+dbCounter;
+			path = Neo4j_ServicesDBPath+""+databaseName;
 		}
 		else{
 			startTime = System.currentTimeMillis();
@@ -181,7 +197,10 @@ public class Main implements Runnable{
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			neo4jwsc.generateDB(null,Neo4j_testServicesDBPath,"original test", null);
+			
+			//neo4jwsc.generateDB(null,Neo4j_testServicesDBPath,"original test", null);
+			globalConnection.generateDB(null,Neo4j_ServicesDBPath,"original",databaseName);
+						
 			endTime = System.currentTimeMillis();
 			neo4jwsc.records.put("Create new test db", endTime - startTime);
 			System.out.println("Create new test db Total execution time: " + (endTime - startTime) );
@@ -196,7 +215,11 @@ public class Main implements Runnable{
 		//2: connect to tempServiceDatabase
 		//3: use task inputs outputs create start and end nodes and link to tempservicedatabase
 		startTime = System.currentTimeMillis();
-		runTask(path); 
+		
+		//runTask(path); 
+		globalConnection.runTask(path);
+		//globalConnection.dbCounter = dbCounter;
+		
 		endTime = System.currentTimeMillis();
 		neo4jwsc.records.put("run task: copied db, create temp db, add start and end nodes", endTime - startTime);
 		System.out.println("run task: copied db, create temp db, add start and end nodes Total execution time: " + (endTime - startTime) );
@@ -205,17 +228,20 @@ public class Main implements Runnable{
 
 		//reduce database use copied database
 		startTime = System.currentTimeMillis();
-		reduceDB(); // Algorithm 4: Reduce Graph Database
+		
+		//reduceDB(); // Algorithm 4: Reduce Graph Database
+		globalConnection.reduceDB();
+		
 		endTime = System.currentTimeMillis();
 		neo4jwsc.records.put("reduce graph db ", endTime - startTime);
 		System.out.println("reduce graph db Total execution time: " + (endTime - startTime) );
 
 
 		// FIND COMPOSITIONS - Algorithm 5?
-		if(!neo4jwsc.runMultipileTime){
+		if(!neo4jwsc.runMultipileTime) {
 			//find compositions
 			startTime = System.currentTimeMillis();
-			Map<List<Node>, Map<String,Map<String, Double>>> resultWithQos =findCompositions();
+			Map<List<Node>, Map<String,Map<String, Double>>> resultWithQos = findCompositions();
 			endTime = System.currentTimeMillis();
 			neo4jwsc.records.put("generate candidates", endTime - startTime);
 			System.out.println();
@@ -225,7 +251,7 @@ public class Main implements Runnable{
 			System.out.println();
 
 			startTime = System.currentTimeMillis();
-			printResult(resultWithQos);
+			//printResult(resultWithQos);
 			endTime = System.currentTimeMillis();
 			neo4jwsc.records.put("generate best result", endTime - startTime);
 			System.out.println();
@@ -241,7 +267,6 @@ public class Main implements Runnable{
 			//::TODO I probably don't want to find the best result - rather just keep population
 			// the findCompositions() method on line 193 automatically returns the best (QoS) composition
 			startTime = System.currentTimeMillis();
-			int newDBCounter = 0; //::TODO remoev this later and from line 228, it was just to create a lot of small databases with different compositions
 
 			// helper method to see how the result is computed ::TODO remove
 /*			try {
@@ -252,31 +277,36 @@ public class Main implements Runnable{
 
 			for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry : resultWithQos.entrySet()) {
 				newDBCounter++;
-				try { //::TODO maybe enable this later? NOTE: i've enabled it for now - used to be disabled
-					FileUtils.deleteRecursively(new File(newResultDBPath+dbCounter));
+/*				try { //::TODO maybe enable this later? 
+					FileUtils.deleteRecursively(new File(newResultDBPath));
 				} catch (IOException e) {
 					e.printStackTrace();
-				}
+				}*/
 				//				generateDB(entry.getKey(),newResultDBPath,"result db", null);
-				GenerateDatabase generateDatabase2 = new GenerateDatabase(entry.getKey(), subGraphDatabaseService, newResultDBPath+dbCounter);
-				generateDatabase2.createDbService();
+				GenerateDatabase generateDatabase2 = new GenerateDatabase(entry.getKey(), Neo4jConnection.subGraphDatabaseService, newResultDBPath+newDBCounter);
+				generateDatabase2.useNew = true;
+
+				generateDatabase2.createDbService(true);
 				GraphDatabaseService newGraphDatabaseService = generateDatabase2.getGraphDatabaseService();
-				registerShutdownHook(graphDatabaseService,"original test");
-				generateDatabase2.setServiceMap(serviceMap);
-				generateDatabase2.setTaxonomyMap(taxonomyMap);
+
+				generateDatabase2.setServiceMap(Neo4jConnection.serviceMap);
+				generateDatabase2.setTaxonomyMap(Neo4jConnection.taxonomyMap);
 				generateDatabase2.createServicesDatabase();
-				//				System.out.println("findCompositions.getBestRels()"+bestRels);
-				//				generateDatabase2.set(bestRels);
+
+				
 				generateDatabase2.addServiceNodeRelationShip();
 				removeRedundantRel(newGraphDatabaseService, generateDatabase2);
+				
+				generateDatabase2.useNew = false;
 
 
 				// find out how to access this new non-redundant database
 				Map<Integer, List<Node>> nodeLayers = buildLayers(generateDatabase2, newGraphDatabaseService, entry.getKey());
 				//graphToTreeOld(generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
 				rootNode = graphToTree(nodeLayers, generateDatabase2, newGraphDatabaseService, entry.getKey(), newResultDBPath+newDBCounter);
-				registerShutdownHook(subGraphDatabaseService,"Reduced");
+				//registerShutdownHook(subGraphDatabaseService,"Reduced");
 				registerShutdownHook(newGraphDatabaseService, "Result");
+
 			}
 
 			endTime = System.currentTimeMillis();
@@ -294,12 +324,12 @@ public class Main implements Runnable{
 			while(count <neo4jwsc.timesToRun) {
 				//find compositions
 				startTime = System.currentTimeMillis();
-				FindCompositions findCompositions = new FindCompositions(candidateSize, individuleNodeSize, subGraphDatabaseService);
-				findCompositions.setStartNode(startNode);
-				findCompositions.setEndNode(endNode);
-				findCompositions.setNeo4jServNodes(neo4jServNodes);
-				findCompositions.setTaxonomyMap(taxonomyMap);
-				findCompositions.setSubGraphNodesMap(subGraphNodesMap);
+				FindCompositions findCompositions = new FindCompositions(candidateSize, individuleNodeSize, Neo4jConnection.subGraphDatabaseService);
+				findCompositions.setStartNode(Neo4jConnection.startNode);
+				findCompositions.setEndNode(Neo4jConnection.endNode);
+				findCompositions.setNeo4jServNodes(Neo4jConnection.neo4jServNodes);
+				findCompositions.setTaxonomyMap(Neo4jConnection.taxonomyMap);
+				findCompositions.setSubGraphNodesMap(Neo4jConnection.subGraphNodesMap);
 				findCompositions.setM_a(m_a);
 				findCompositions.setM_r(m_r);
 				findCompositions.setM_c(m_c);
@@ -403,27 +433,8 @@ public class Main implements Runnable{
 				fw.close();
 			}
 		}
-		TaxonomyNode tNode = taxonomyMap.get("inst1716616603").parentNode;
-		tNode.getParent();
-		System.out.println("inst1716616603 parents: ");
 
-		for(String s: tNode.childrenString){
-//			System.out.println(s);
-//			TaxonomyNode ttNode = taxonomyMap.get(s);
-//			for(String c: ttNode.childrenString){
-				if(s.equals("inst927259823"))
-					System.out.print("inst927259823");
-				if(s.equals("inst608977925"))
-					System.out.print("inst608977925");
-				if(s.equals("inst885068313"))
-					System.out.print("inst885068313");
-				if(s.equals("inst1420249694"))
-					System.out.print("inst1420249694");
-				if(s.equals("inst1488043421"))
-					System.out.print("inst1488043421");
-//			}
-			//  inst927259823,inst608977925 inst885068313,inst1420249694,inst1488043421
-		}
+
 		FileWriter fw = new FileWriter("timeRecord.txt");
 		for(Entry<String, Long> entry : neo4jwsc.records.entrySet()){
 			fw.write(entry.getKey()+"    " +entry.getValue()+ "\n");
@@ -967,7 +978,7 @@ public class Main implements Runnable{
 
 	private static void printResult(Map<List<Node>, Map<String, Map<String, Double>>> resultWithQos) {
 		System.out.println("Best result: ");
-		Transaction tx = subGraphDatabaseService.beginTx();
+		Transaction tx = Neo4jConnection.subGraphDatabaseService.beginTx();
 
 
 		try{
@@ -1010,24 +1021,24 @@ public class Main implements Runnable{
 
 
 	private static Map<List<Node>, Map<String, Map<String, Double>>> findCompositions() {
-		FindCompositions findCompositions = new FindCompositions(candidateSize, individuleNodeSize, subGraphDatabaseService);
-		findCompositions.setStartNode(startNode);
-		findCompositions.setEndNode(endNode);
-		findCompositions.setNeo4jServNodes(neo4jServNodes);
-		findCompositions.setTaxonomyMap(taxonomyMap);
-		findCompositions.setSubGraphNodesMap(subGraphNodesMap);
+		FindCompositions findCompositions = new FindCompositions(candidateSize, individuleNodeSize, Neo4jConnection.subGraphDatabaseService);
+		findCompositions.setStartNode(Neo4jConnection.startNode);
+		findCompositions.setEndNode(Neo4jConnection.endNode);
+		findCompositions.setNeo4jServNodes(Neo4jConnection.neo4jServNodes);
+		findCompositions.setTaxonomyMap(Neo4jConnection.taxonomyMap);
+		findCompositions.setSubGraphNodesMap(Neo4jConnection.subGraphNodesMap);
 		findCompositions.setM_a(m_a);
 		findCompositions.setM_r(m_r);
 		findCompositions.setM_c(m_c);
 		findCompositions.setM_t(m_t);
 		Map<List<Node>, Map<String, Map<String, Double>>> candidates = null;
 		try {
-			candidates = findCompositions.run();
+			candidates = findCompositions.run(); // size 50
 		} catch (OuchException e1) {
 			e1.printStackTrace();
 		}
 
-		Transaction transaction = subGraphDatabaseService.beginTx();
+		//Transaction transaction = subGraphDatabaseService.beginTx();
 		try{
 			System.out.println("candidates: ");
 			int i = 0;
@@ -1057,7 +1068,7 @@ public class Main implements Runnable{
 			System.out.println(e);
 			System.out.println("print populations error..");
 		} finally {
-			transaction.close();
+			//transaction.close();
 		}
 		 return findCompositions.getResult(candidates); //::TODO this returns the best candidate but maybe I just want all the candidates to perform GP on
 		// TODO: maybe I should only return 1 (i.e. the above)? but then is that a good thing? maybe takes more time to find best, maybe I just want to return a random one?
@@ -1065,37 +1076,7 @@ public class Main implements Runnable{
 	}
 
 
-	private static void reduceDB() {
-		ReduceGraphDb reduceGraphDb = new ReduceGraphDb(graphDatabaseService);
-		reduceGraphDb.setStartNode(startNode);
-		reduceGraphDb.setEndNode(endNode);
-		reduceGraphDb.setNeo4jServNodes(neo4jServNodes);
-		reduceGraphDb.setTaxonomyMap(taxonomyMap);
-		reduceGraphDb.setServiceMap(serviceMap);
 
-		Set<Node> relatedNodes = new HashSet<Node>();;
-		reduceGraphDb.findAllReleatedNodes(relatedNodes, false);
-		System.out.println(relatedNodes.size());
-//		Set<Node>toRemove = new HashSet<Node>();
-//		for(Node node: relatedNodes){
-//			Transaction transaction = graphDatabaseService.beginTx();
-//			if(!node.getProperty("name").equals("start")){
-//				if(!isNodeFulfilled(node, relatedNodes, graphDatabaseService)){
-//					toRemove.add(node);
-//				}
-//			}
-//			transaction.close();
-//		}
-//		System.out.println(	"tomove: "+			toRemove.size());
-
-		reduceGraphDb.createNodes(relatedNodes, dbCounter);
-		reduceGraphDb.createRel();
-		relatedNodes = reduceGraphDb.getRelatedNodes();
-		startNode = reduceGraphDb.getStartNode();
-		endNode = reduceGraphDb.getEndNode();
-		subGraphDatabaseService = reduceGraphDb.getSubGraphDatabaseService();
-		subGraphNodesMap = reduceGraphDb.getSubGraphNodesMap();
-	}
 	private static boolean isNodeFulfilled(Node node, Set<Node> nodes, GraphDatabaseService graphDatabaseService) {
 
 		Transaction transaction = graphDatabaseService.beginTx();
@@ -1135,59 +1116,7 @@ public class Main implements Runnable{
 		transaction.close();
 		return false;
 	}
-	private static void runTask(String path) {
-
-		RunTask runtask = new RunTask(path);
-		runtask.setServiceNodes(serviceNodes);
-		runtask.setTaxonomyMap(taxonomyMap);
-		runtask.setServiceNodes(serviceNodes);
-		runtask.setTaskInputs(loadFiles.getTaskInputs());
-		runtask.setTaskOutputs(loadFiles.getTaskOutputs());
-		runtask.copyDb(dbCounter);
-		runtask.createTempDb(dbCounter);
-		graphDatabaseService = runtask.getTempGraphDatabaseService();
-		registerShutdownHook(graphDatabaseService, "Temp");
-		neo4jServNodes.clear();
-		neo4jServNodes = runtask.getNeo4jServNodes();
-		tempServices = runtask.getTempServices();
-		runtask.addStartEndNodes();
-		startNode = runtask.getStartNode();
-		endNode = runtask.getEndNode();
-		runtask.createRel(startNode);
-		runtask.createRel(endNode);
-	}
-
-
-	private void generateDB(List<Node> nodes, String dbpath, String string, String databaseName) {
-
-		String path = "";
-		if(databaseName == null){
-			path = dbpath;
-		}else{
-			path = dbpath+""+databaseName;
-		}
-		GenerateDatabase generateDatabase = new GenerateDatabase(null, null,path);
-		generateDatabase.createDbService();
-		graphDatabaseService = generateDatabase.getGraphDatabaseService();
-		registerShutdownHook(graphDatabaseService, string);
-		generateDatabase.setServiceMap(serviceMap);
-		generateDatabase.setTaxonomyMap(taxonomyMap);
-		generateDatabase.createServicesDatabase();
-		generateDatabase.addServiceNodeRelationShip();
-		neo4jServNodes.clear();
-		neo4jServNodes = generateDatabase.getNeo4jServNodes();
-		Transaction transaction = graphDatabaseService.beginTx();
-		try{
-			index = graphDatabaseService.index();
-			services = index.forNodes( "identifiers" );
-			transaction.success();
-		} catch (Exception e) {
-			System.out.println(e);
-			System.out.println("Main set index and services error..");
-		} finally {
-			transaction.close();
-		}
-	}
+	
 
 
 	private static void removeRedundantRel(GraphDatabaseService graphDatabaseService, GenerateDatabase generateDatabase2) {
@@ -1294,18 +1223,6 @@ public class Main implements Runnable{
 		else return false;
 	}
 
-	@SuppressWarnings("deprecation")
-	private static void loadExistingDB() {
-		graphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(Neo4j_ServicesDBPath+""+databaseName+dbCounter));
-		
-		registerShutdownHook(graphDatabaseService, "exist original");
-		Transaction transaction = graphDatabaseService.beginTx();
-		index = graphDatabaseService.index();
-		services = index.forNodes( "identifiers" );
-		transaction.success();
-		transaction.close();
-		signNodesToField(neo4jServNodes, graphDatabaseService);
-	}
 
 
 	private static void populateTaxonomytree() {

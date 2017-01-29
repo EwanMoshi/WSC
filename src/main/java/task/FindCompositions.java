@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -20,6 +21,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.Traversal;
 
+import Main.Neo4jConnection;
 import component.TaxonomyNode;
 
 @SuppressWarnings("deprecation")
@@ -66,9 +68,24 @@ public class FindCompositions {
 	}
 	
 	
-	public Map<List<Node>, Map<String,Map<String, Double>>> run() throws OuchException{
+	public Map<List<Node>, Map<String,Map<String, Double>>> run() throws OuchException {
 		Map<List<Node>, Double> timeForEachCandidate = new HashMap<List<Node>, Double>();
-		findCandidates(timeForEachCandidate);		
+		findCandidates(timeForEachCandidate);
+		
+/*		// pick out a random candidate
+		Random random = new Random();
+		List<List<Node>> keys = new ArrayList<List<Node>> (timeForEachCandidate.keySet());
+		List<Node> randomkey = keys.get(random.nextInt(keys.size()));
+		double value = timeForEachCandidate.get(randomkey);		
+		Map<List<Node>, Double> randomCandidate = new HashMap<List<Node>, Double>();
+		randomCandidate.put(randomkey, value);*/
+		
+		
+		// if we didn't find a composition, check again
+		while(timeForEachCandidate.size() == 0) {
+			findCandidates(timeForEachCandidate);
+		}
+		
 		Map<List<Node>, Map<String,Map<String, Double>>> candidatesWithQos = calculateQos(timeForEachCandidate);
 		return candidatesWithQos;
 	}
@@ -100,7 +117,7 @@ public class FindCompositions {
 		for (Map.Entry<List<Node>, Map<String,Map<String, Double>>> entry3 : bestResultWithQos.entrySet()){
 			Set<Node>bestResult = new HashSet<Node>(entry3.getKey());
 			for(Node n: bestResult){
-				Transaction tx = subGraphDatabaseService.beginTx();
+				Transaction tx = Neo4jConnection.subGraphDatabaseService.beginTx();
 				bestNodesMap.put((String)n.getProperty("name"), n);
 				tx.close();
 			}
@@ -141,7 +158,7 @@ public class FindCompositions {
 			List<Node> candidate = entry1.getKey();
 			for(int j = 0; j<candidate.size(); j++){
 				Node node = candidate.get(j);
-				Transaction tx = subGraphDatabaseService.beginTx();
+				Transaction tx = Neo4jConnection.subGraphDatabaseService.beginTx();
 				totalA*=(double)node.getProperty("weightAvailibility");
 				totalR*=(double)node.getProperty("weightReliability");
 				totalC+=(double)node.getProperty("weightCost");
@@ -177,7 +194,7 @@ public class FindCompositions {
 				double totalC = 0;
 				for(int j = 0; j<candidate.size(); j++){
 					Node node = candidate.get(j);
-					Transaction tx = subGraphDatabaseService.beginTx();
+					Transaction tx =Neo4jConnection. subGraphDatabaseService.beginTx();
 					A.add((double)node.getProperty("weightAvailibility"));
 					R.add((double)node.getProperty("weightReliability"));
 					C.add((double)node.getProperty("weightCost"));
@@ -244,19 +261,17 @@ public class FindCompositions {
 
 	private void findCandidates(Map<List<Node>, Double> timeForEachCandidate) throws OuchException {
 		int size = 0;
-		while(timeForEachCandidate.size()<candidateSize){ 
-			//			System.out.println();
-			//			if(timeForEachCandidate.size()>size){
-			//				size = timeForEachCandidate.size();
-			//				System.out.print("candidate "+size);
-			//			}
-			//			System.out.println();
+		//while(timeForEachCandidate.size()<candidateSize) { //27th JAN NOTE: This used to be part of original to find 50 candidates, but we only want 1 so I've
+															            // removed it 			
+
 			skipRecursive  = false;			
 			Set<Node>result = new HashSet<Node>();
 
+			//Transaction tt = subGraphDatabaseService.beginTx();
 			Transaction tt = subGraphDatabaseService.beginTx();
+
 			try {
-				for(Node node:subGraphDatabaseService.getAllNodes()){
+				for(Node node : subGraphDatabaseService.getAllNodes()){
 					node.setProperty("totalTime", 0.0);
 				}	
 				startNode.setProperty("totalTime", 0.0);
@@ -274,7 +289,9 @@ public class FindCompositions {
 			if(result.size()<=individuleNodeSize){
 				boolean fulfilled = true;
 				for(Node node: result){
-					Transaction tx = subGraphDatabaseService.beginTx();
+					//Transaction tx = subGraphDatabaseService.beginTx();
+					Transaction tx = Neo4jConnection.subGraphDatabaseService.beginTx();
+
 					try {
 						if(!node.getProperty("name").equals("start") &&!node.getProperty("name").equals("end") ){
 
@@ -295,7 +312,9 @@ public class FindCompositions {
 				if(fulfilled){
 					boolean findNonRelNode = false;
 					for(Node sNode: result){
-						Transaction ttt = subGraphDatabaseService.beginTx();
+						//Transaction ttt = subGraphDatabaseService.beginTx();
+						Transaction ttt = Neo4jConnection.subGraphDatabaseService.beginTx();
+
 						try {
 							if(!hasRel(startNode, sNode, result) || !hasRel(sNode, endNode, result)){
 								findNonRelNode =true;
@@ -314,13 +333,15 @@ public class FindCompositions {
 
 						if(result.size()<=individuleNodeSize && result.size()>0){
 							for(Node n: result){
-								Transaction transaction = subGraphDatabaseService.beginTx();
+								//Transaction transaction = subGraphDatabaseService.beginTx();
+								Transaction transaction = Neo4jConnection.subGraphDatabaseService.beginTx();
+
 								try {
 									if(n.getProperty("name").equals("start")){
 										List<Node> list = new ArrayList<Node>(result);
 										timeForEachCandidate.put(list,(double)n.getProperty("totalTime"));
 										List<Node> list2 = new ArrayList<Node>(result);
-										Transaction tr = subGraphDatabaseService.beginTx();
+										Transaction tr = Neo4jConnection.subGraphDatabaseService.beginTx();
 										//							Set<Relationship> rs = new HashSet<Relationship>(relationships);
 										List<Map<String,String>>rels = new ArrayList<Map<String,String>>();
 										//							for (Relationship r: rs){
@@ -352,12 +373,12 @@ public class FindCompositions {
 					}
 				}
 			}
-		}
+		//}
 
 	}
 
 	private boolean contains(String property, Set<Node> result) {
-		Transaction transaction = subGraphDatabaseService.beginTx();
+		Transaction transaction = Neo4jConnection.subGraphDatabaseService.beginTx();
 		for(Node n: result){
 			if(n.getProperty("name").equals(property)){
 				transaction.close();
@@ -369,7 +390,9 @@ public class FindCompositions {
 	}
 
 	private boolean hasRel(Node firstNode, Node secondNode, Set<Node> releatedNodes) {
-		Transaction transaction = subGraphDatabaseService.beginTx();
+		//Transaction transaction = subGraphDatabaseService.beginTx();
+		Transaction transaction = Neo4jConnection.subGraphDatabaseService.beginTx();
+
 		try {
 			if(releatedNodes==null){
 				PathFinder<Path> finder = GraphAlgoFactory.shortestPath(Traversal.expanderForTypes(RelTypes.IN, Direction.OUTGOING), neo4jServNodes.size());                  
@@ -405,7 +428,9 @@ public class FindCompositions {
 
 		List<Relationship> rels = new ArrayList<Relationship>();
 
-		Transaction tt = subGraphDatabaseService.beginTx();
+		//Transaction tt = subGraphDatabaseService.beginTx();
+		Transaction tt = Neo4jConnection.subGraphDatabaseService.beginTx();
+
 		try {
 			for(Relationship r: subEndNode.getRelationships(Direction.INCOMING)){
 				rels.add(r);
@@ -427,7 +452,7 @@ public class FindCompositions {
 				return;
 			}else{
 				for (Node node: fulfillSubEndNodes){
-					Transaction t = subGraphDatabaseService.beginTx();
+					Transaction t = Neo4jConnection.subGraphDatabaseService.beginTx();
 					try{
 						double preNodeTotalTime =(double) subEndNode.getProperty("totalTime");
 						double currentNodeTime = (double)node.getProperty("weightTime");
@@ -462,7 +487,7 @@ public class FindCompositions {
 
 			List<String>relOutputs = new ArrayList<String>();			
 			for(Relationship r: rels){
-				Transaction tx = subGraphDatabaseService.beginTx();
+				Transaction tx = Neo4jConnection.subGraphDatabaseService.beginTx();
 				Node node = null;
 				List<String> commonValue  = new ArrayList<String>();
 				try{
@@ -509,7 +534,9 @@ public class FindCompositions {
 		else return false;
 	}
 	private Set<Node> checkDuplicateNodes(Set<Node> result) {
-		Transaction tx = subGraphDatabaseService.beginTx();
+		//Transaction tx = subGraphDatabaseService.beginTx();
+		Transaction tx = Neo4jConnection.subGraphDatabaseService.beginTx();
+
 		Set<Node>temp = new HashSet<Node>(result);
 		try{
 			for(Node n : result){
@@ -553,7 +580,7 @@ public class FindCompositions {
 
 
 	private boolean fulfillSubGraphNodes(Set<Node> releatedNodes) {
-		Transaction transaction = subGraphDatabaseService.beginTx();
+		Transaction transaction = Neo4jConnection.subGraphDatabaseService.beginTx();
 		boolean toReturn = false;
 		try{
 			for(Node sNode: releatedNodes){
@@ -637,7 +664,10 @@ public class FindCompositions {
 	}
 	
 	private String[] getNodePropertyArray(Node sNode, String property){
-		Transaction transaction = subGraphDatabaseService.beginTx();
+		//Transaction transaction = subGraphDatabaseService.beginTx();
+		Transaction transaction = Neo4jConnection.subGraphDatabaseService.beginTx();
+
+
 		String[] array = new String[0];
 
 		try {
@@ -662,7 +692,7 @@ public class FindCompositions {
 	}
 	
 	public GraphDatabaseService getSubGraphDatabaseService() {
-		return subGraphDatabaseService;
+		return Neo4jConnection.subGraphDatabaseService;
 	}
 	private Set<String> getTNodeParentsString(TaxonomyNode tNode) {
 		Set<String>tNodeParents = new HashSet<String>();
@@ -713,7 +743,7 @@ public class FindCompositions {
 	}
 	private boolean isAllNodesFulfilled(Node node, Set<Node> nodes) {
 
-		Transaction transaction = subGraphDatabaseService.beginTx();
+		Transaction transaction = Neo4jConnection.subGraphDatabaseService.beginTx();
 
 		Set<String> inputs = new HashSet<String>();
 		Set<String> nodeInputs = new HashSet<String>();

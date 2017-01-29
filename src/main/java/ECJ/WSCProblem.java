@@ -1,5 +1,9 @@
 package ECJ;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
 import TreeRepresentation.TreeNode;
 import ec.EvolutionState;
 import ec.Individual;
@@ -10,6 +14,7 @@ import ec.simple.SimpleProblemForm;
 import ec.util.Parameter;
 
 public class WSCProblem extends GPProblem implements SimpleProblemForm {
+
 
 	@Override
 	public void setup(final EvolutionState state, final Parameter base) {
@@ -22,6 +27,7 @@ public class WSCProblem extends GPProblem implements SimpleProblemForm {
 
 	@Override
 	public void evaluate(EvolutionState state, Individual ind, int subpopulation, int threadnum) {
+		
 		if (!ind.evaluated) {
 			WSCInitializer init = (WSCInitializer) state.initializer;
 			WSCData input = (WSCData) (this.input);
@@ -42,14 +48,26 @@ public class WSCProblem extends GPProblem implements SimpleProblemForm {
 				qos[WSCInitializer.AVAILABILITY] *= n.getQos()[WSCInitializer.AVAILABILITY];
 				qos[WSCInitializer.RELIABILITY] *= n.getQos()[WSCInitializer.RELIABILITY];
 			}
-
+			
+					
+			
 			double fitness = calculateFitness(qos[WSCInitializer.AVAILABILITY], qos[WSCInitializer.RELIABILITY], qos[WSCInitializer.TIME], qos[WSCInitializer.COST], init);
-
+			
+			// store the best non-normalised QoS
+			if (fitness > Evolve.bestFitness) {
+				Evolve.bestFitness = fitness;
+				Evolve.bestC = qos[WSCInitializer.COST];
+				Evolve.bestA = qos[WSCInitializer.AVAILABILITY];
+				Evolve.bestR = qos[WSCInitializer.RELIABILITY];
+				Evolve.bestT = qos[WSCInitializer.TIME];
+			}
+			
 			SimpleFitness f = ((SimpleFitness) ind.fitness);
 			f.setFitness(state, fitness, false);
 
 			ind.evaluated = true;
-			
+					
+
 		}
 	}
 

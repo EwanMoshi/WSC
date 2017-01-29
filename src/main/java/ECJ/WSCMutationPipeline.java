@@ -9,6 +9,7 @@ import java.util.Set;
 
 import task.OuchException;
 import Main.Main;
+import Main.Neo4jConnection;
 import TreeRepresentation.TreeNode;
 import ec.BreedingPipeline;
 import ec.EvolutionState;
@@ -77,8 +78,8 @@ public class WSCMutationPipeline extends BreedingPipeline {
 			
 			Set<String> inputs = tNode.getInputSet();
 			Set<String> outputs = tNode.getOutputSet();
-			Main.loadFiles.taskInputs = inputs;
-			Main.loadFiles.taskOutputs = outputs;
+			Neo4jConnection.loadFiles.taskInputs = inputs;
+			Neo4jConnection.loadFiles.taskOutputs = outputs;
 			Main.shouldParseFiles = false; // set this to false so when we create new subtree, we don't load the task again we simply create
 										   // subtree based on current node's inputs and outputs which have been set above
 			Main.candidateSize = 1; // same as above - this messes it up if it's left at 50
