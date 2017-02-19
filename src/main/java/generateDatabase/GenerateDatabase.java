@@ -22,6 +22,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 
+import Graph.Service;
 import Main.Neo4jConnection;
 import TreeRepresentation.TreeNode;
 import component.ServiceNode;
@@ -57,6 +58,8 @@ public class GenerateDatabase {
 
 	public boolean useNew = false;
 	
+	public static List<Service> servicesList;
+	
 	public GenerateDatabase(List<Node> graphNodes, GraphDatabaseService oldGraphDatabaseService, String databasePath) {
 		this.databasePath = databasePath;
 		this.graphNodes = graphNodes;
@@ -89,15 +92,10 @@ public class GenerateDatabase {
 		}*/
 	}
 	public void addServiceNodeRelationShip() {
-//		System.out.println(bestRels.size());
-//		if(bestRels.size()==0){
 			Map<String, Object> maps = new HashMap<String, Object>();
 			Map<String,List<String>> inputServices = new HashMap<String,List<String>>();
-			//		Map<String,List<String>> serviceOutputs = new HashMap<String,List<String>>();
+
 			for(Node sNode: neo4jServiceNodes){
-				// TODO: 25th: Do I really need this transaction? looks like it doesn't do anything
-				//Transaction transaction = Neo4jConnection.graphDatabaseService.beginTx();
-				//transaction.close();
 				addInputsServiceRelationship(sNode, maps, inputServices);
 			}
 			servicesWithInputs = inputServices;
@@ -146,7 +144,7 @@ public class GenerateDatabase {
 						relation.setProperty("removeable", false);
 					}
 					else{
-						if(!inputsServicesNode.getProperty("name").equals(sNode.getProperty("name"))){
+						if(!inputsServicesNode.getProperty("name").equals(sNode.getProperty("name"))){ // if it's not the same service i.e it's one of the input services
 							String[] tempToArray = getOutputs(inputsServicesNode, sNode, Neo4jConnection.graphDatabaseService);
 							relation = inputsServicesNode.createRelationshipTo(sNode, RelTypes.IN);
 							relation.setProperty("From", s);
@@ -192,7 +190,9 @@ public class GenerateDatabase {
 			snodeOutputsAllParents.addAll(getTNodeParentsString(tNode));
 		}
 		List<String>temp = new ArrayList<String>(snodeOutputsAllParents);
+		
 		temp.retainAll(nodeInputs);
+		
 		String[] tempToArray = new String[temp.size()];
 		for(int i = 0; i<temp.size(); i++){
 			tempToArray[i] = temp.get(i);
@@ -200,6 +200,8 @@ public class GenerateDatabase {
 
 		return tempToArray;
 	}
+	
+	
 	public void createServicesDatabase() {	
 		Transaction transaction;
 		if (graphNodes==null) {
@@ -346,7 +348,7 @@ public class GenerateDatabase {
 					neo4jServiceNodes[neo4jServiceNodes.length-1] =service;
 					neo4jServNodes.put((String) sNode.getProperty("name"), service);
 					nNodes.add(service);					
-					tx.success();
+					tx.success();	
 				}catch(Exception e){
 					System.out.println("createNewGraphDatabase:  graphDatabaseService    "+ e);
 				}finally{
@@ -436,6 +438,7 @@ public class GenerateDatabase {
 
 		return newArray;
 	}
+	
 	private Set<String> getTNodeParentsString(TaxonomyNode tNode) {
 		Set<String>tNodeParents = new HashSet<String>();
 		for(String t: tNode.parentsString){
@@ -518,4 +521,137 @@ public class GenerateDatabase {
 	public GraphDatabaseService getOldGraphDatabaseService() {
 		return oldGraphDatabaseService;
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	public void createServicesDatabase2() {
+		servicesList = new ArrayList<Service>();
+		
+		Transaction transaction;
+		
+		if (graphNodes==null) {
+			if (useNew) {
+				transaction = newResultGraphDatabaseService.beginTx();
+			}
+			else {
+				transaction = Neo4jConnection.graphDatabaseService.beginTx();
+			}
+
+			neo4jServiceNodes = new Node[0];
+			try{
+				index = Neo4jConnection.graphDatabaseService.index();
+				services = index.forNodes( "identifiers" );
+				
+				for(Entry<String, ServiceNode> entry : serviceMap.entrySet()) {
+					ServiceNode value = entry.getValue();
+				
+					String name = entry.getKey();
+					double[] qos = value.getQos();
+					String[] inputs = value.getInputsArray();
+					String[] outputs = value.getOutputsArray();
+					String[] inputServices = value.getInputsServiceArray();
+					String[] outputServices = value.getOutputsServiceArray();
+										
+					Service service = new Service(name, qos, inputs, outputs, inputServices, outputServices);
+					servicesList.add(service);
+				}
+				
+				transaction.success();
+			} catch (Exception e) {
+				System.out.println(e);
+				System.out.println("GenerateDatabase createServicesDatabase error.."); 
+			} finally {
+				transaction.close();
+			}		
+		}
+		//create nodes from neo4j nodes
+		else {
+	
+			transaction = oldGraphDatabaseService.beginTx();
+	
+			//List<TreeNode> tree = new ArrayList<TreeNode>();
+					
+			//Node startingNode = oldGraphDatabaseService.findNodesByLabelAndProperty(label, "name", value)
+			
+			
+			for(Node sNode: graphNodes) {
+				// pass the current node, the rest of nodes in the comp, whether we want to retrieve inputs or 
+				// outputs for current node, and the DB service
+				String[] inputServices = getInputOutputServicesForSubGraph(sNode, graphNodes, "inputServices",oldGraphDatabaseService);				
+				String[] outputServices = getInputOutputServicesForSubGraph(sNode, graphNodes,"outputServices",oldGraphDatabaseService);
+				
+
+				if(inputServices==null){
+					inputServices = new String[0];
+				}
+				if(outputServices==null){
+					outputServices = new String[0];
+				}
+							
+				Transaction tx;
+				if (useNew) {
+					tx = newResultGraphDatabaseService.beginTx();
+					index = newResultGraphDatabaseService.index();				
+				}
+				else {
+					tx = Neo4jConnection.graphDatabaseService.beginTx();
+					index = Neo4jConnection.graphDatabaseService.index();
+				}
+
+				services = index.forNodes( "identifiers" );
+				try {
+					double[] qos = new double[4];
+					if(sNode.getProperty("name").equals("start")||sNode.getProperty("name").equals("end")){
+						qos = new double[4];
+					}else{
+						ServiceNode serviceNode = serviceMap.get((String) sNode.getProperty("name"));
+						qos = serviceNode.getQos();
+					}
+
+					String name = (String) sNode.getProperty("name");
+					
+					String[] inputs = getNodePropertyArray(sNode,"inputs",oldGraphDatabaseService);
+					String[] outputs = getNodePropertyArray(sNode,"outputs",oldGraphDatabaseService);
+					Service service = new Service(name, qos, inputs, outputs, inputServices, outputServices);
+					
+				
+					servicesList.add(service);			
+				
+					tx.success();
+				}catch(Exception e){
+					System.out.println("createNewGraphDatabase:  graphDatabaseService    "+ e);
+				}finally{
+					tx.close();
+				}
+			}
+			transaction.close();
+
+		}
+		
+		// iterate over each service 
+		for (Service s : servicesList) {
+			// iterate over each output service
+			for (String child : s.outputServices) {
+				// find the corresponding service and add it to the outputs list
+				// also add the "parent" to the corresponding service's inputs list
+				// NOTE: this is pretty stupid 
+				for (Service s2 : servicesList) {
+					if (child.equals(s2.name)) {
+						s.outputServicesList.add(s2);
+						s2.inputServicesList.add(s);
+					}
+				}
+			}
+		}
+		
+	}		
 }

@@ -158,6 +158,9 @@ public class FindCompositions {
 			List<Node> candidate = entry1.getKey();
 			for(int j = 0; j<candidate.size(); j++){
 				Node node = candidate.get(j);
+				if (node.getId() == 559) {
+					System.out.println(node.getProperty("name").toString()); // 30th JAN UPDATE: this is the end node that's giving error
+				}
 				Transaction tx = Neo4jConnection.subGraphDatabaseService.beginTx();
 				totalA*=(double)node.getProperty("weightAvailibility");
 				totalR*=(double)node.getProperty("weightReliability");
@@ -269,18 +272,23 @@ public class FindCompositions {
 
 			//Transaction tt = subGraphDatabaseService.beginTx();
 			Transaction tt = subGraphDatabaseService.beginTx();
-
+			//Transaction t2 = Neo4jConnection.tempGraphDatabaseService.beginTx();
+			// 30th JAN: shouldn't have to use temp
 			try {
 				for(Node node : subGraphDatabaseService.getAllNodes()){
 					node.setProperty("totalTime", 0.0);
 				}	
-				startNode.setProperty("totalTime", 0.0);
+				startNode.setProperty("totalTime", 0.0); //31st: for some reason, startNode needs tempGraphDatbase service when db already exists, else subgraphdatabaes
 				tt.success();
+				//t2.success();
+
 			} catch (Exception e) {
 				System.out.println(e);
 				System.out.println("eeeeeeeeeeeeeerror.."); 
 			} finally {
 				tt.close();
+				//t2.success();
+
 			}	
 
 			result.add(endNode);
@@ -447,7 +455,7 @@ public class FindCompositions {
 
 		if(fulfillSubEndNodes!=null){
 			result.addAll(fulfillSubEndNodes);
-			if(result.size()>individuleNodeSize){
+			if(result.size()>individuleNodeSize){ // is this the stopping criteria mentioned in Section 4.2.2 of Jacky's report?
 				relationships.clear();
 				return;
 			}else{

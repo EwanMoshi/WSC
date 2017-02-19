@@ -32,11 +32,11 @@ public class RunTask {
 	private Set<String> taskOutputs;
 	private Node startNode;
 	private Node endNode;
-	private static GraphDatabaseService tempGraphDatabaseService;
-	private Map<String, Node> neo4jServNodes = new HashMap<String, Node>();
+	public static GraphDatabaseService tempGraphDatabaseService;
+	public Map<String, Node> neo4jServNodes = new HashMap<String, Node>();
 	private Map<String, TaxonomyNode> taxonomyMap = new HashMap<String, TaxonomyNode>();
 	private final String Neo4j_tempDBPath = "database/temp_graph";
-	private IndexManager tempIndex = null;
+	public IndexManager tempIndex = null;
 	private Index<Node> tempServices = null;
 	private Set<ServiceNode> serviceNodes = new HashSet<ServiceNode>();
 	Relationship relation;

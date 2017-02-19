@@ -1,12 +1,16 @@
 package ECJ;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
+import component.TaxonomyNode;
 import task.OuchException;
 import Main.Main;
 import Main.Neo4jConnection;
@@ -19,6 +23,11 @@ import ec.util.Parameter;
 
 public class WSCMutationPipeline extends BreedingPipeline {
 
+	private static int fileCounter = 0;
+	private static long startTime;
+	private static long endTime;
+	
+	
 	@Override
 	public Parameter defaultBase() {
 		return new Parameter("wscmutationpipeline");
@@ -30,7 +39,7 @@ public class WSCMutationPipeline extends BreedingPipeline {
 	}
 
 	@Override
-	public int produce(int min, int max, int start, int subpopulation, Individual[] inds, EvolutionState state, int thread) {
+	public int produce(int min, int max, int start, int subpopulation, Individual[] inds, EvolutionState state, int thread) {		
 		WSCInitializer init = (WSCInitializer) state.initializer;
 		
 		int n = sources[0].produce(min, max, start, subpopulation, inds, state, thread);
@@ -76,16 +85,37 @@ public class WSCMutationPipeline extends BreedingPipeline {
 
 			TreeNode tNode = (TreeNode) selectedNode;
 			
-			Set<String> inputs = tNode.getInputSet();
-			Set<String> outputs = tNode.getOutputSet();
-			Neo4jConnection.loadFiles.taskInputs = inputs;
-			Neo4jConnection.loadFiles.taskOutputs = outputs;
-			Main.shouldParseFiles = false; // set this to false so when we create new subtree, we don't load the task again we simply create
-										   // subtree based on current node's inputs and outputs which have been set above
-			Main.candidateSize = 1; // same as above - this messes it up if it's left at 50
+			//Set<String> inputs = tNode.getInputSet();
+			//Set<String> outputs = tNode.getOutputSet();
+			
+			
+			/******* Jacky's code of finding all outputs or something - not entirely sure how it works *********/
+			Set<String> tNodeAllOutputs = new HashSet<String>();
+			Set<String> tNodeAllInputs = new HashSet<String>();
+			
+			for(String s: tNode.getOutputSet()){
+				TaxonomyNode taxonomyNode = Neo4jConnection.taxonomyMap.get(s);
+				tNodeAllOutputs.addAll(Main.getTNodeParentsString(taxonomyNode));
+			}
+			
+			for(String s: tNode.getInputSet()){
+				TaxonomyNode taxonomyNode = Neo4jConnection.taxonomyMap.get(s);
+				tNodeAllInputs.addAll(Main.getTNodeParentsString(taxonomyNode));
+			}
+			
+			/*************** End of Jacky's Code ****************************/
+			
+			
+			
+			Neo4jConnection.loadFiles.taskInputs = tNodeAllInputs;
+			Neo4jConnection.loadFiles.taskOutputs = tNodeAllOutputs;
+			
 			
 			// this should create a new tree based on input/output of currently selected node (tNode from above)
 			//Main main = new Main();
+			
+			startTime = System.currentTimeMillis();
+
 			
 			try {
 				Main.main(new String[0]);
@@ -93,12 +123,31 @@ public class WSCMutationPipeline extends BreedingPipeline {
 				e.printStackTrace();
 			}
 			
+			endTime = System.currentTimeMillis();
+
+			 try {
+				FileWriter writer2 = new FileWriter(new File("mutationTimeDebug/file"+fileCounter+".txt"));
+				
+			
+				long totalTime = endTime - startTime;
+				
+				if (totalTime > 0) {
+					writer2.append("\n Time Taken for mutation:   "+totalTime);
+				}
+
+				writer2.close();
+				fileCounter++;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			
 			GPNode newNode = (GPNode) Main.rootNode;
 					
 			tree.replaceNode(selectedNodeCasted, newNode); // 19th JAN START FROM HERE - NULL POINTER sometimes - figure out when and why
 			tree.evaluated = false;
-			Main.shouldParseFiles = true; // set this back to true
-			Main.candidateSize = 50; // go back to original value
+	
+			
 		}
 		
 		return n;

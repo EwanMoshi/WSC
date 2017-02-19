@@ -1,8 +1,16 @@
 package ECJ;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
+import component.TaxonomyNode;
+import Main.Main;
+import Main.Neo4jConnection;
 import TreeRepresentation.TreeNode;
 import ec.BreedingPipeline;
 import ec.EvolutionState;
@@ -12,6 +20,11 @@ import ec.util.Parameter;
 
 public class WSCCrossoverPipeline extends BreedingPipeline {
 
+	private static int fileCounter = 0;
+	private static long startTime;
+	private static long endTime;
+	
+	
 	@Override
 	public Parameter defaultBase() {
 		return new Parameter("wsccrossoverpipeline");
@@ -24,6 +37,9 @@ public class WSCCrossoverPipeline extends BreedingPipeline {
 
 	@Override
 	public int produce(int min, int max, int start, int subpopulation, Individual[] inds, EvolutionState state, int thread) {
+		startTime = System.currentTimeMillis();
+
+		
 		WSCInitializer init = (WSCInitializer) state.initializer;
 
 		Individual[] inds1 = new Individual[inds.length];
@@ -90,6 +106,25 @@ public class WSCCrossoverPipeline extends BreedingPipeline {
 			}
 		}
 
+		
+		
+		endTime = System.currentTimeMillis();
+
+		 try {
+			FileWriter writer2 = new FileWriter(new File("crossoverTimeDebug/file"+fileCounter+".txt"));
+			
+		
+			long totalTime = endTime - startTime;
+			
+			writer2.append("\n Time Taken for crossover:   "+totalTime);
+
+			writer2.close();
+			fileCounter++;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		
 		return n1;
 	}
 
@@ -101,8 +136,27 @@ public class WSCCrossoverPipeline extends BreedingPipeline {
 				TreeNode tNode = (TreeNode) node;
 				TreeNode rNode = (TreeNode) replacement;
 				
+				
+				List<String> rNodeAllOutputs = new ArrayList<String>();
+				List<String> tNodeAllInputs = new ArrayList<String>();
+				
+				/******* Jacky's code of finding all outputs or something - not entirely sure how it works *********/
+				for(String s: rNode.getOutputSet()){
+					TaxonomyNode taxonomyNode = Neo4jConnection.taxonomyMap.get(s);
+					rNodeAllOutputs.addAll(Main.getTNodeParentsString(taxonomyNode));
+				}
+				
+				for(String s: tNode.getInputSet()){
+					TaxonomyNode taxonomyNode = Neo4jConnection.taxonomyMap.get(s);
+					tNodeAllInputs.addAll(Main.getTNodeParentsString(taxonomyNode));
+				}
+				
+				/*************** End of Jacky's Code ****************************/
+				
 				// TODO: Make sure the input/output are the right way around - I think they are correct at the moment
-				if (tNode.getInputSet().containsAll(rNode.getInputSet()) && rNode.getOutputSet().containsAll(tNode.getOutputSet())) {
+				// if (tNode.getInputSet().containsAll(rNode.getInputSet()) && rNode.getOutputSet().containsAll(tNode.getOutputSet())) { // ORIGINAL
+				if (tNodeAllInputs.containsAll(rNode.getInputSet()) && rNodeAllOutputs.containsAll(tNode.getOutputSet())) {
+					System.out.println("SWAPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP");
 					result[0] = node;
 	                result[1] = replacement;
 	                break;

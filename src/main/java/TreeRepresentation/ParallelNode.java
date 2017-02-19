@@ -46,6 +46,10 @@ public class ParallelNode extends GPNode implements TreeNode {
 	public void eval(EvolutionState state, int thread, GPData input, ADFStack stack, GPIndividual individual, Problem problem) {
 		WSCData rd = ((WSCData) (input));
 		Set<TreeNode> seenServices = new HashSet<TreeNode>();
+		Set<String> overallInputs = new HashSet<String>();
+		Set<String> overallOutputs = new HashSet<String>();
+		
+		double maxTime = 0.0;
 		
 		// populate the children array
 		children = new GPNode[ch.size()];
@@ -56,13 +60,26 @@ public class ParallelNode extends GPNode implements TreeNode {
 		
 		for (GPNode child : children) { // UPDATE 10th JAN - children is null
 			child.eval(state, thread, input, stack, individual, problem);
+			
+			if (rd.maxTime > maxTime) {
+				maxTime = rd.maxTime;
+			}
+			
 			seenServices.addAll(rd.seenServices);
+			
+			// Update overall inputs and outputs
+			overallInputs.addAll(rd.inputSet);
+			overallOutputs.addAll(rd.outputSet);
 		}
 
 		// store the input and output information in this node? ::TODO Do I need this?
 		inputSet = rd.inputSet;
 		outputSet = rd.outputSet;
 		rd.seenServices = seenServices;
+		rd.maxTime = maxTime;
+		
+		inputSet = overallInputs;
+		outputSet = overallOutputs;
 	}
 
 	@Override

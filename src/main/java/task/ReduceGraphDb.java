@@ -28,6 +28,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.Traversal;
 
+import ECJ.WSCInitializer;
 import Main.Neo4jConnection;
 import component.ServiceNode;
 import component.TaxonomyNode;
@@ -37,7 +38,7 @@ public class ReduceGraphDb {
 	private Node startNode;
 	private Node endNode;
 	private GraphDatabaseService graphDatabaseService = null;
-	private GraphDatabaseService subGraphDatabaseService = null;
+	public GraphDatabaseService subGraphDatabaseService = null;
 
 	private Map<String, Node> neo4jServNodes = new HashMap<String, Node>();;
 	private Map<String,Node>subGraphNodesMap = new HashMap<String,Node>();
@@ -330,6 +331,7 @@ public class ReduceGraphDb {
 
 		return newArray;
 	}
+	
 	public void createRel(){
 		for(Node sNode: subGraphNodes){
 			Transaction transaction = subGraphDatabaseService.beginTx();
@@ -352,6 +354,7 @@ public class ReduceGraphDb {
 			}				
 		}
 	}
+	
 	private void addStartNodeRel(Node sNode){
 		Transaction transaction = subGraphDatabaseService.beginTx();
 		try{
@@ -421,6 +424,11 @@ public class ReduceGraphDb {
 		}
 	}
 	
+	
+	// 31st Jan: This method populates subGraphNodes which is needed if I want to loadExistingSubGraph.
+	// not calling this method means subGraphNodes is empty and loadExsisting method doesn't work
+	// because the startNode is not being associated with subGraphDatabase service. Instead, it's 
+	// tied to the tempGraphDatbaseService
 	public void createNodes(Set<Node>relatedNodes){
 		try {
 			FileUtils.deleteRecursively(new File(Neo4j_subDBPath));
@@ -515,26 +523,26 @@ public class ReduceGraphDb {
 		// Availability
 		double availability = qos[AVAILABILITY];
 		if (availability > maxAvailability)
-			maxAvailability = availability;
+			WSCInitializer.maxAvailability = availability;
 
 		// Reliability
 		double reliability = qos[RELIABILITY];
 		if (reliability > maxReliability)
-			maxReliability = reliability;
+			WSCInitializer.maxReliability = reliability;
 
 		// Time
 		double time = qos[TIME];
 		if (time > maxTime)
-			maxTime = time;
+			WSCInitializer.maxTime = time;
 		if (time < minTime)
-			minTime = time;
+			WSCInitializer.minTime = time;
 
 		// Cost
 		double cost = qos[COST];
 		if (cost > maxCost)
-			maxCost = cost;
+			WSCInitializer.maxCost = cost;
 		if (cost < minCost)
-			minCost = cost;
+			WSCInitializer.minCost = cost;
 
 
 		// Adjust max. cost and max. time based on the number of services in shrunk repository

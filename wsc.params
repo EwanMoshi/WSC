@@ -35,9 +35,12 @@ stat.file		                               = $out.stat
 stat.do-time                                   = true
 stat.do-final                                  = true
 
+#original 50
 generations                                    = 50
 
 pop.subpops		                               = 1
+
+#original 30
 pop.subpop.0.size 	                           = 30
 pop.subpop.0.duplicate-retries 	               = 0
 pop.subpop.0.species                           = ECJ.WSCSpecies
@@ -54,8 +57,9 @@ pop.subpop.0.species.pipe                      = ec.breed.MultiBreedingPipeline
 pop.subpop.0.species.pipe.num-sources          = 3
 pop.subpop.0.species.pipe.source.0             = ECJ.WSCCrossoverPipeline
 pop.subpop.0.species.pipe.source.0.num-sources = 2
+pop.subpop.0.species.pipe.source.0.prob        = 0.9
 pop.subpop.0.species.pipe.source.1             = ECJ.WSCMutationPipeline
-#pop.subpop.0.species.pipe.source.1.prob        = 0.0
+pop.subpop.0.species.pipe.source.1.prob        = 0.1
 pop.subpop.0.species.pipe.source.1.num-sources = 1
 pop.subpop.0.species.pipe.source.2             = ec.breed.ReproductionPipeline
 pop.subpop.0.species.pipe.source.2.prob        = 0.0

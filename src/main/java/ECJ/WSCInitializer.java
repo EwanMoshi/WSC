@@ -11,14 +11,16 @@ public class WSCInitializer extends GPInitializer {
 	public static final int AVAILABILITY = 2;
 	public static final int RELIABILITY = 3;
 
-	public final double minAvailability = 0.0;
-	public double maxAvailability = -1.0;
-	public final double minReliability = 0.0;
-	public double maxReliability = -1.0;
-	public double minTime = Double.MAX_VALUE;
-	public double maxTime = -1.0;
-	public double minCost = Double.MAX_VALUE;
-	public double maxCost = -1.0;
+	
+	
+	public static double minAvailability = 0.0;
+	public static double maxAvailability = -1.0;
+	public static double minReliability = 0.0;
+	public static double maxReliability = -1.0;
+	public static double minTime = Double.MAX_VALUE;
+	public static double maxTime = -1.0;
+	public static double minCost = Double.MAX_VALUE;
+	public static double maxCost = -1.0;
 	public double w1;
 	public double w2;
 	public double w3;

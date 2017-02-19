@@ -2,7 +2,14 @@ package Main;
 
 import generateDatabase.GenerateDatabase;
 
+import java.nio.file.attribute.BasicFileAttributes;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,14 +39,19 @@ public class Neo4jConnection {
 	
 	public final static String Neo4j_testServicesDBPath = "database/test_services";
 	public final static String Neo4j_ServicesDBPath = "database/";
+	public final static String Neo4j_subDBPath = "database/sub_graph";
 	public final static String newResultDBPath = "database/result/";
-	
+	public final static String tempDBPath = "database/temp_graph/";
+
 	public static Map<String, Node> neo4jServNodes = new HashMap<String, Node>();
 	public static Map<String, Node> subGraphNodesMap = new HashMap<String, Node>();;
 	public static Map<String, ServiceNode> serviceMap = new HashMap<String, ServiceNode>();
 	public static Map<String, TaxonomyNode> taxonomyMap = new HashMap<String, TaxonomyNode>();
 	
 	public static IndexManager index = null;
+	public static IndexManager indexSub = null;
+	public static IndexManager indexTemp = null;
+
 	public static Index<Node> services;
 	public static Index<Node> tempServices;
 
@@ -52,7 +64,7 @@ public class Neo4jConnection {
 	public static Neo4jConnection dbConnection;
 	
 	public final static String year = "2008";
-	public final static String dataSet = "03";
+	public final static String dataSet = "01";
 	public static String databaseName = "";
 
 	public static Node endNode = null;
@@ -96,6 +108,14 @@ public class Neo4jConnection {
 	
 	public void generateDB(List<Node> nodes, String dbpath, String string, String databaseName) {
 
+		// if the database exists, load it and exit. 
+		File f = new File(dbpath+databaseName);
+		if (f.exists() && f.isDirectory()) {
+			loadExistingDB();
+			return;
+		}
+		
+		// create database if it doesn't exist
 		String path = "";
 		if(databaseName == null){
 			path = dbpath;
@@ -117,8 +137,8 @@ public class Neo4jConnection {
 		neo4jServNodes = generateDatabase.getNeo4jServNodes();
 		Transaction transaction = graphDatabaseService.beginTx();
 		try{
-			index = graphDatabaseService.index();
-			services = index.forNodes( "identifiers" );
+			indexSub = graphDatabaseService.index();
+			services = indexSub.forNodes( "identifiers" );
 			transaction.success();
 		} catch (Exception e) {
 			System.out.println(e);
@@ -127,34 +147,50 @@ public class Neo4jConnection {
 			transaction.close();
 		}
 	}
-	
-	private static void signNodesToField(Map<String, Node> neo4jServNodes, GraphDatabaseService graphDatabaseService) {
-		Transaction transaction = graphDatabaseService.beginTx();
-		@SuppressWarnings("deprecation")
-		Iterable<Node> nodes = graphDatabaseService.getAllNodes();
-		neo4jServNodes.clear();
-		int i = 0;
-		for(Node n: nodes){
-			i++;
-			neo4jServNodes.put((String)n.getProperty("name"), n);
+		
+	public void removeFile(Path directory) throws IOException {
+		Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+			   @Override
+			   public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+			       Files.delete(file);
+			       return FileVisitResult.CONTINUE;
+			   }
 
-		}
-		System.out.println("total service nodes: "+i);
-		transaction.success();
-		transaction.close();
+			   @Override
+			   public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+			       Files.delete(dir);
+			       return FileVisitResult.CONTINUE;
+			   }
+			});
 	}
 	
 	public void reduceDB() {
+		// 31st JAN: Problems with GP, commented out for now
+		// if the sub graph already exists, load it and exit. 
+/*		File f = new File(Neo4j_subDBPath);
+		if (f.exists() && f.isDirectory()) {
+			 loadExistingSubGraph(); //this doesn't really work with the current temp/sub_grpah setup
+						
+			Path directory = Paths.get(Neo4j_subDBPath);
+			try {
+				removeFile(directory);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+						
+			return;
+		}*/
+		
 		if (reduceGraphDb == null) {
 			reduceGraphDb = new ReduceGraphDb(graphDatabaseService);
 			
-			reduceGraphDb.setStartNode(startNode);
+			reduceGraphDb.setStartNode(startNode); // sets startNode from temp_graph DB
 			reduceGraphDb.setEndNode(endNode);
 			reduceGraphDb.setNeo4jServNodes(neo4jServNodes);
 			reduceGraphDb.setTaxonomyMap(taxonomyMap);
 			reduceGraphDb.setServiceMap(serviceMap);
 
-			Set<Node> relatedNodes = new HashSet<Node>();;
+			Set<Node> relatedNodes = new HashSet<Node>();
 			reduceGraphDb.findAllReleatedNodes(relatedNodes, false);
 			System.out.println(relatedNodes.size());
 
@@ -162,14 +198,68 @@ public class Neo4jConnection {
 			reduceGraphDb.createNodes(relatedNodes);
 			reduceGraphDb.createRel();
 			// relatedNodes = reduceGraphDb.getRelatedNodes(); 25th: for some reason, relatedNodes is empty
-			startNode = reduceGraphDb.getStartNode();
+			startNode = reduceGraphDb.getStartNode(); // sets startNode back to the one in sub_graph DB
 			endNode = reduceGraphDb.getEndNode();
 			subGraphDatabaseService = reduceGraphDb.getSubGraphDatabaseService();
 			subGraphNodesMap = reduceGraphDb.getSubGraphNodesMap();
 		}
 	}
 	
+	public void loadExistingSubGraph() {
+		if (reduceGraphDb == null) {
+			reduceGraphDb = new ReduceGraphDb(graphDatabaseService);
+
+			subGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(Neo4j_subDBPath));
+			
+			Transaction transaction = subGraphDatabaseService.beginTx();
+			try {
+				index = subGraphDatabaseService.index();
+				services = index.forNodes( "identifiers" );
+				signNodesToField(subGraphNodesMap, subGraphDatabaseService);
+					
+			
+				reduceGraphDb.setStartNode(startNode);
+				reduceGraphDb.setEndNode(endNode);
+				reduceGraphDb.setNeo4jServNodes(neo4jServNodes);
+				reduceGraphDb.setTaxonomyMap(taxonomyMap);
+				reduceGraphDb.setServiceMap(serviceMap);
+
+				reduceGraphDb.createRel();
+
+				startNode = reduceGraphDb.getStartNode();
+				endNode = reduceGraphDb.getEndNode();
+				reduceGraphDb.subGraphDatabaseService = subGraphDatabaseService;
+				subGraphNodesMap = reduceGraphDb.getSubGraphNodesMap();
+				
+				transaction.success();
+			} catch(Exception e){
+				System.out.println(e.getMessage());
+			}finally{
+				transaction.close();
+			}
+
+			registerShutdownHook(subGraphDatabaseService, "sub original");
+		}
+	}
+	
 	public void runTask(String path) {
+		// 31st JAN: Problems with GP, commented out for now
+/*		File f = new File(tempDBPath);
+		
+		if (f.exists() && f.isDirectory()) {
+			// loadExistingSubGraph(); this doesn't really work with the current temp/sub_grpah setup
+						
+			Path directory = Paths.get(tempDBPath);
+			
+			try {
+				removeFile(directory);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+						
+			//return;
+		}*/
+		
 		if (runtask == null) {
 			runtask = new RunTask(path);
 			runtask.setServiceNodes(serviceNodes);
@@ -177,6 +267,7 @@ public class Neo4jConnection {
 			runtask.setServiceNodes(serviceNodes);
 			runtask.setTaskInputs(loadFiles.getTaskInputs());
 			runtask.setTaskOutputs(loadFiles.getTaskOutputs());
+
 			runtask.copyDb();
 			runtask.createTempDb();
 			tempGraphDatabaseService = runtask.getTempGraphDatabaseService();
@@ -189,9 +280,29 @@ public class Neo4jConnection {
 			endNode = runtask.getEndNode();
 			runtask.createRel(startNode);
 			runtask.createRel(endNode);
+
 		}
 	}
 	
+	private void loadExistingTemp(RunTask runtask) {
+		tempGraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(tempDBPath));
+		
+		Transaction transaction = tempGraphDatabaseService.beginTx();
+		
+		try {
+			indexTemp = tempGraphDatabaseService.index();
+			services = indexTemp.forNodes( "identifiers" );
+			signNodesToField(neo4jServNodes, tempGraphDatabaseService);
+			transaction.success();
+		} catch(Exception e){
+			System.out.println(e.getMessage());
+		}finally{
+			transaction.close();
+		}
+		registerShutdownHook(tempGraphDatabaseService, "sub original");
+
+	}
+
 	public static void loadFiles() {
 		loadFiles = new LoadFiles(serviceFileName,taxonomyFileName, taskFileName);
 		loadFiles.runLoadFiles();
@@ -209,6 +320,20 @@ public class Neo4jConnection {
 		populateTaxonomyTree.populateTaxonomyTree();
 	}
 	
+	private static void signNodesToField(Map<String, Node> neo4jServNodes, GraphDatabaseService graphDatabaseService) {
+		Transaction transaction = graphDatabaseService.beginTx();
+		@SuppressWarnings("deprecation")
+		Iterable<Node> nodes = graphDatabaseService.getAllNodes();
+		neo4jServNodes.clear();
+		
+		for(Node n: nodes){
+			neo4jServNodes.put((String)n.getProperty("name"), n);
+		}
+		
+		transaction.success();
+		transaction.close();
+	}
+		
 	private static void registerShutdownHook(GraphDatabaseService graphDatabaseService, String database ) {
 		// Registers a shutdown hook for the Neo4j instance so that it
 		// shuts down nicely when the VM exits (even if you "Ctrl-C" the
